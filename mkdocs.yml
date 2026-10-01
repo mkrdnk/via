@@ -1,0 +1,7 @@
+site_name: Via
+
+nav:
+  - index: index.md
+
+theme:
+  name: readthedocs
