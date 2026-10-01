@@ -11,6 +11,11 @@ deployment: the workflow builds the HTTP-only binary, starts Via with a static
 route, and verifies the complete site through real HTTP requests before the
 artifact can be uploaded.
 
+The workflow runs when a GitHub Release is published and checks out that
+release tag. Documentation therefore represents a published version rather
+than an arbitrary commit from `master`. A manual dispatch remains available
+for recovery.
+
 The smoke-test configuration is
 `.github/pages/via.yaml`:
 
@@ -59,7 +64,7 @@ DNS and certificate provisioning happen outside the repository. The committed
 
 `.github/workflows/pages.yml` performs:
 
-1. checkout;
+1. checkout of the published release tag;
 2. Crystal and MkDocs setup;
 3. static site build;
 4. HTTP-only Via build;

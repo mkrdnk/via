@@ -20,6 +20,7 @@ nav:
   - Operations:
       - Debug mode and hot reload: hot-reload.md
       - Error pages and request IDs: errors.md
+      - Releases: releases.md
       - GitHub Pages deployment: deployment.md
   - Internals:
       - Proxy behavior: proxy-behavior.md

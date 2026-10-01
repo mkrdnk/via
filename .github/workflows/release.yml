@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      release_tag: ${{ github.ref_name }}
+
+  release:
+    name: Attach binaries to release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: via-*-x86_64
+          merge-multiple: true
+          path: dist
+
+      - name: Verify downloaded archives
+        shell: bash
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd dist
+          for platform in fedora43 debian13 ubuntu24.04; do
+            sha256sum --check "via-${VERSION}-${platform}-x86_64.tar.gz.sha256"
+          done
+
+      - name: Create release or upload missing assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          assets=()
+          for platform in fedora43 debian13 ubuntu24.04; do
+            archive="dist/via-${VERSION}-${platform}-x86_64.tar.gz"
+            assets+=("$archive" "$archive.sha256")
+          done
+
+          if is_draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft); then
+            if [[ "$is_draft" == true ]]; then
+              gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+              exit 0
+            fi
+
+            existing=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+            missing=()
+            verification_dir=$(mktemp -d)
+            trap 'rm -rf "$verification_dir"' EXIT
+
+            for platform in fedora43 debian13 ubuntu24.04; do
+              archive="via-${VERSION}-${platform}-x86_64.tar.gz"
+              pair_missing=()
+
+              for file in "$archive" "$archive.sha256"; do
+                if ! grep -Fxq -- "$file" <<< "$existing"; then
+                  pair_missing+=("dist/$file")
+                fi
+              done
+
+              if (( ${#pair_missing[@]} == 1 )); then
+                rm -f "$verification_dir/$archive" "$verification_dir/$archive.sha256"
+                for file in "$archive" "$archive.sha256"; do
+                  if grep -Fxq -- "$file" <<< "$existing"; then
+                    gh release download "$RELEASE_TAG" \
+                      --pattern "$file" \
+                      --dir "$verification_dir"
+                  else
+                    cp "dist/$file" "$verification_dir/$file"
+                  fi
+                done
+                (
+                  cd "$verification_dir"
+                  sha256sum --check "$archive.sha256"
+                )
+              fi
+
+              missing+=("${pair_missing[@]}")
+            done
+
+            if (( ${#missing[@]} > 0 )); then
+              gh release upload "$RELEASE_TAG" "${missing[@]}"
+            else
+              echo "Release $RELEASE_TAG already has all binary assets."
+            fi
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --verify-tag \
+              --draft \
+              --title "via $VERSION" \
+              --generate-notes
+          fi
