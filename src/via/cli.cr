@@ -62,6 +62,7 @@ module Via
       state = Runtime::State.new(error, debug)
       tls_enabled = false
       tls = nil
+      validated = nil
 
       begin
         validated = validator.validate
@@ -74,10 +75,14 @@ module Via
       end
 
       server = Server.new(listen, state, tls_enabled)
-      address = server.bind
-      scheme = tls_enabled ? "https" : "http"
-      output.puts "Via #{VERSION} listening on #{scheme}://#{address}"
-      output.puts "Debug mode enabled" if debug
+      server.bind
+      Console::Banner.render(
+        output,
+        config_path: path,
+        listen: model.listen.not_nil!,
+        config: validated,
+        debug: debug
+      )
 
       reloader = Configuration::Reloader.new(path, listen, tls, state, output)
       reloader.start

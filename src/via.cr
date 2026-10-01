@@ -23,6 +23,7 @@ require "./via/runtime/state"
 require "./via/tls/reloadable_server"
 require "./via/configuration/watcher"
 require "./via/configuration/reloader"
+require "./via/console/banner"
 require "./via/server"
 require "./via/cli"
 

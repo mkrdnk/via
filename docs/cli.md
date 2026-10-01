@@ -12,6 +12,24 @@ Or with a directory of configuration fragments:
 via -c /etc/via/config/
 ```
 
+Via prints one startup summary after the listener is bound:
+
+```text
+██▄       ▄██    ▄██▄
+ ▀██▄   ▄██▀    ██  ██
+   ██▄ ▄██     ██    ██
+    ▀███▀     ██      ██    via 0.1.0
+
+→ config     /etc/via/config.yaml
+→ listening  :8080
+→ upstream   localhost:3000
+
+ready
+```
+
+Multiple-route configurations show the route count and each unique proxy or
+static target. TLS and debug mode are marked explicitly.
+
 ## Options
 
 ```text
