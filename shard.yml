@@ -1,0 +1,13 @@
+name: via
+version: 0.1.0
+
+authors:
+  - Adrian Makridenko <adrianmakridenko@duck.com>
+
+targets:
+  via:
+    main: src/via/main.cr
+
+crystal: '>= 1.21.1'
+
+license: Apache-2.0
