@@ -9,17 +9,21 @@ progress concurrently.
 
 ## Code boundaries
 
-The implementation is split by responsibility:
+The implementation is split into bounded modules:
 
-- `config*` parses, merges, validates, watches, and reloads YAML;
-- `route` contains immutable route targets, while `router` only selects one;
-- `forwarded_headers` owns HTTP intermediary header policy;
-- `proxy` coordinates routing, upstream clients, and response streaming;
-- `static_path` owns filesystem containment rules used by both validation and
-  runtime static serving;
-- `proxy_generation` tracks in-flight work during atomic replacement;
-- `runtime_state` publishes one proxy and TLS generation to new requests;
-- `server` owns listener lifecycle, and `cli` owns process lifecycle.
+```text
+Via::Configuration  YAML model, validation, loading, watching, reload
+Via::Routing        immutable route targets and route selection
+Via::HTTP           request IDs, error pages, forwarding header policy
+Via::Proxy          upstream transport and connection pooling
+Via::Runtime        atomic generations and diagnostic state
+Via::Static         filesystem containment and file serving
+Via::TLS            contexts and reloadable TLS listener
+```
+
+The source tree mirrors these namespaces under `src/via/`. `Via::Server` and
+`Via::CLI` remain at the root because they compose modules into listener and
+process lifecycles.
 
 This keeps configuration, routing, transport, and lifecycle decisions
 independent and directly testable.
