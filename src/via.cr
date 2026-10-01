@@ -3,6 +3,8 @@ require "http/server"
 require "yaml"
 
 require "./via/config"
+require "./via/router"
+require "./via/config_validator"
 require "./via/client_pool"
 require "./via/proxy"
 require "./via/server"

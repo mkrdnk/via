@@ -20,16 +20,36 @@ module Via
       The upstream server could not be reached.
       TEXT
 
-    def initialize(upstream : URI, @log : IO = STDERR)
-      @clients = ClientPool.new(upstream)
+    NOT_FOUND_BODY = <<-TEXT
+      via
+
+      404
+      Not Found
+
+      No route matched this request.
+      TEXT
+
+    def initialize(routes : Enumerable(Route), @log : IO = STDERR)
+      route_list = routes.to_a
+      @router = Router.new(route_list)
+      @clients = {} of String => ClientPool
+      route_list.each do |route|
+        @clients[route.upstream.to_s] ||= ClientPool.new(route.upstream)
+      end
     end
 
     def call(context : HTTP::Server::Context) : Nil
       request = context.request
       response = context.response
       downstream_started = false
+      route = @router.match(request.headers["Host"]?, request.path)
 
-      @clients.with do |client|
+      unless route
+        not_found(response)
+        return
+      end
+
+      @clients[route.upstream.to_s].with do |client|
         headers = forwarded_headers(request.headers)
         client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
           response.status = upstream_response.status
@@ -84,6 +104,13 @@ module Via
       response.content_type = "text/plain; charset=utf-8"
       response.content_length = BAD_GATEWAY_BODY.bytesize
       response << BAD_GATEWAY_BODY
+    end
+
+    private def not_found(response : HTTP::Server::Response) : Nil
+      response.status = :not_found
+      response.content_type = "text/plain; charset=utf-8"
+      response.content_length = NOT_FOUND_BODY.bytesize
+      response << NOT_FOUND_BODY
     end
   end
 end

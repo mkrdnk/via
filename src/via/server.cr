@@ -3,7 +3,7 @@ module Via
     getter address : Socket::IPAddress?
 
     def initialize(config : ValidatedConfig, log : IO = STDERR)
-      proxy = Proxy.new(config.upstream, log)
+      proxy = Proxy.new(config.routes, log)
       @http_server = HTTP::Server.new { |context| proxy.call(context) }
       @listen = config.listen
       @address = nil
