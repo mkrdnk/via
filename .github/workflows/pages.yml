@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+          ref: ${{ github.event.repository.default_branch }}
 
       - name: Install Crystal
         run: sh scripts/install-crystal.sh
@@ -40,20 +40,19 @@ jobs:
       - name: Install documentation tooling
         run: python -m pip install mkdocs mike
 
-      - name: Build landing and Via
-        run: |
-          make docs
-          make build-http
-
-      - name: Build versioned documentation
-        id: versioned
+      - name: Check out published source
+        id: source
         shell: bash
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
+          source_ref="${RELEASE_TAG:-$(git rev-parse HEAD)}"
+          source_dir="$RUNNER_TEMP/source"
+          rm -rf "$source_dir"
+          git worktree add --detach "$source_dir" "$source_ref"
 
-          version=$(awk '$1 == "version:" { print $2; exit }' shard.yml)
+          version=$(awk '$1 == "version:" { print $2; exit }' "$source_dir/shard.yml")
           if [[ -z "$version" ]]; then
             echo "shard.yml does not contain a version" >&2
             exit 1
@@ -63,6 +62,22 @@ jobs:
             exit 1
           fi
 
+          echo "directory=$source_dir" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build Via from published source
+        working-directory: ${{ steps.source.outputs.directory }}
+        run: make build-http
+
+      - name: Build versioned documentation
+        id: versioned
+        shell: bash
+        env:
+          SOURCE_DIR: ${{ steps.source.outputs.directory }}
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          set -euo pipefail
+
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
@@ -70,14 +85,14 @@ jobs:
           fi
 
           mike deploy \
-            --config-file mkdocs.yml \
+            --config-file "$SOURCE_DIR/mkdocs.yml" \
             --branch gh-pages \
             --deploy-prefix docs \
             --alias-type redirect \
             --update-aliases \
-            "$version" latest
+            "$VERSION" latest
           mike set-default \
-            --config-file mkdocs.yml \
+            --config-file "$SOURCE_DIR/mkdocs.yml" \
             --branch gh-pages \
             --deploy-prefix docs \
             latest
@@ -86,14 +101,22 @@ jobs:
           rm -rf "$pages_dir"
           git worktree add "$pages_dir" gh-pages
 
-          cp site/index.html site/styles.css site/CNAME site/.nojekyll "$pages_dir/"
+          cp "$SOURCE_DIR/web/index.html" "$pages_dir/index.html"
+          cp "$SOURCE_DIR/web/styles.css" "$pages_dir/styles.css"
+          cp "$SOURCE_DIR/web/CNAME" "$pages_dir/CNAME"
+          touch "$pages_dir/.nojekyll"
           rm -rf "$pages_dir/assets"
-          cp -a site/assets "$pages_dir/assets"
+          mkdir "$pages_dir/assets"
+          cp \
+            "$SOURCE_DIR/docs/assets/favicon.svg" \
+            "$SOURCE_DIR/docs/assets/site.css" \
+            "$SOURCE_DIR/docs/assets/via-logo.svg" \
+            "$pages_dir/assets/"
 
           git -C "$pages_dir" add \
             index.html styles.css CNAME .nojekyll assets
           if ! git -C "$pages_dir" diff --cached --quiet; then
-            git -C "$pages_dir" commit -m "Deploy landing for via $version"
+            git -C "$pages_dir" commit -m "Deploy landing for via $VERSION"
           fi
 
           rm -rf site
@@ -106,6 +129,7 @@ jobs:
       - name: Verify versioned site through Via
         env:
           DOCS_PREFIX: ${{ steps.versioned.outputs.docs_prefix }}
+          VIA_BIN: ${{ steps.source.outputs.directory }}/bin/via
         run: sh scripts/pages-smoke.sh
 
       - name: Preserve generated documentation versions
