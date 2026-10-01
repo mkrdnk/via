@@ -1,0 +1,14 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  fill="none"
+>
+  <path
+    d="M6 14H17L28 36L39 14H50L33.5 47H22.5L6 14Z"
+    fill="currentColor"
+  />
+  <path
+    d="M31 47L47.5 14H58L41.5 47H31Z"
+    fill="currentColor"
+  />
+</svg>

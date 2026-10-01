@@ -17,3 +17,4 @@ nav:
 
 theme:
   name: readthedocs
+  custom_dir: theme
