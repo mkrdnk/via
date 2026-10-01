@@ -135,6 +135,25 @@ describe Via::Router do
   end
 end
 
+describe Via::ErrorPages do
+  it "embeds status details and the request ID for every gateway error" do
+    statuses = {
+      HTTP::Status::BAD_REQUEST,
+      HTTP::Status::NOT_FOUND,
+      HTTP::Status::BAD_GATEWAY,
+      HTTP::Status::SERVICE_UNAVAILABLE,
+      HTTP::Status::GATEWAY_TIMEOUT,
+    }
+
+    statuses.each do |status|
+      body = Via::ErrorPages.body(status, "request-id")
+      body.should contain(status.code.to_s)
+      body.should contain(status.description.not_nil!)
+      body.should contain("Request ID: request-id")
+    end
+  end
+end
+
 describe Via::Proxy do
   it "removes standard and Connection-nominated hop-by-hop headers" do
     source = HTTP::Headers{
@@ -204,13 +223,14 @@ describe Via::Proxy do
   end
 
   it "sets Host and X-Forwarded request metadata" do
-    received = Channel(Tuple(String, String, String, String)).new(1)
+    received = Channel(Tuple(String, String, String, String, String)).new(1)
     upstream = HTTP::Server.new do |context|
       received.send({
         context.request.headers["Host"],
         context.request.headers["X-Forwarded-Host"],
         context.request.headers["X-Forwarded-Proto"],
         context.request.headers["X-Forwarded-For"],
+        context.request.headers["X-Request-ID"],
       })
       context.response << "ok"
     end
@@ -225,21 +245,25 @@ describe Via::Proxy do
       spawn proxy.listen
 
       begin
-        HTTP::Client.get(
+        response = HTTP::Client.get(
           "http://#{proxy_address}/",
           headers: HTTP::Headers{
             "Host"              => "public.example.com:8080",
             "X-Forwarded-For"   => "203.0.113.10",
             "X-Forwarded-Host"  => "spoofed.example.com",
             "X-Forwarded-Proto" => "https",
+            "X-Request-ID"      => "client-supplied",
           }
         )
+        request_id = response.headers["X-Request-ID"]
+        request_id.should match(/\A[0-9a-f]{32}\z/)
 
         received.receive.should eq({
           upstream_address.to_s,
           "public.example.com:8080",
           "http",
           "203.0.113.10, 127.0.0.1",
+          request_id,
         })
       ensure
         proxy.close
@@ -655,7 +679,35 @@ describe Via::Proxy do
       )
       response.status.should eq(HTTP::Status::NOT_FOUND)
       response.body.should contain("No route matched this request.")
+      request_id = response.headers["X-Request-ID"]
+      request_id.should match(/\A[0-9a-f]{32}\z/)
+      response.body.should contain("Request ID: #{request_id}")
     ensure
+      proxy.close
+    end
+  end
+
+  it "returns the built-in 400 page when an HTTP/1.1 Host header is missing" do
+    config = Via::ValidatedConfig.new(
+      Via::ListenAddress.new("127.0.0.1", 0),
+      [Via::Route.new(nil, "/", URI.parse("http://127.0.0.1:1"))]
+    )
+    proxy = Via::Server.new(config, IO::Memory.new)
+    address = proxy.bind
+    spawn proxy.listen
+    client = TCPSocket.new(address.address, address.port)
+
+    begin
+      client << "GET / HTTP/1.1\r\nConnection: close\r\n\r\n"
+      client.flush
+      wire_response = client.gets_to_end
+
+      wire_response.should contain("HTTP/1.1 400 Bad Request")
+      wire_response.should contain("\r\nX-Request-ID: ")
+      wire_response.should contain("The request could not be understood.")
+      wire_response.should contain("Request ID: ")
+    ensure
+      client.close
       proxy.close
     end
   end
@@ -669,7 +721,8 @@ describe Via::Proxy do
       Via::ListenAddress.new("127.0.0.1", 0),
       [Via::Route.new(nil, "/", URI.parse("http://127.0.0.1:#{port}"))]
     )
-    proxy = Via::Server.new(config, IO::Memory.new)
+    log = IO::Memory.new
+    proxy = Via::Server.new(config, log)
     address = proxy.bind
     spawn proxy.listen
 
@@ -677,6 +730,11 @@ describe Via::Proxy do
       response = HTTP::Client.get("http://#{address}/")
       response.status.should eq(HTTP::Status::BAD_GATEWAY)
       response.body.should contain("The upstream server could not be reached.")
+      request_id = response.headers["X-Request-ID"]
+      request_id.should match(/\A[0-9a-f]{32}\z/)
+      response.body.should contain("Request ID: #{request_id}")
+      log.to_s.should contain("request_id=#{request_id}")
+      log.to_s.should contain("error=bad_gateway")
     ensure
       proxy.close
     end
