@@ -4,6 +4,7 @@ module Via
   class CLI
     def self.run(args = ARGV, output : IO = STDOUT, error : IO = STDERR) : Int32
       config_path = nil
+      debug = false
       requested_exit = false
       exit_code = 0
 
@@ -11,6 +12,9 @@ module Via
         options.banner = "Usage: via -c CONFIG"
         options.on("-c PATH", "--config=PATH", "Path to the YAML configuration") do |path|
           config_path = path
+        end
+        options.on("--debug", "Show diagnostics and verbose proxy logs") do
+          debug = true
         end
         options.on("--version", "Show Via version") do
           output.puts "via #{VERSION}"
@@ -52,14 +56,34 @@ module Via
         return 2
       end
 
-      config = Config.load(path).validate
-      server = Server.new(config, error)
+      model = ConfigLoader.new(path).load
+      validator = ConfigValidator.new(model)
+      listen = validator.validate_listen
+      state = RuntimeState.new(error, debug)
+
+      begin
+        state.apply(validator.validate)
+      rescue ex : ConfigurationError
+        raise ex unless debug
+        state.reject(path, ex)
+      end
+
+      server = Server.new(listen, state)
       address = server.bind
       output.puts "Via #{VERSION} listening on http://#{address}"
+      output.puts "Debug mode enabled" if debug
+
+      reloader = ConfigReloader.new(path, listen, state, output)
+      reloader.start
 
       Signal::INT.trap { server.close }
       Signal::TERM.trap { server.close }
-      server.listen
+      begin
+        server.listen
+      ensure
+        reloader.stop
+        state.close
+      end
       0
     rescue ex : ConfigurationError
       error.puts "Configuration error: #{ex.message}"

@@ -13,10 +13,16 @@ module Via
     end
 
     def validate : ValidatedConfig
-      listen = parse_listen(@config.listen)
+      listen = validate_listen
       routes = build_routes
       reject_duplicate_routes(routes)
       ValidatedConfig.new(listen, routes)
+    end
+
+    def validate_listen : ListenAddress
+      value = @config.listen ||
+              raise ConfigurationError.new("Configuration requires listen")
+      parse_listen(value)
     end
 
     private def build_routes : Array(Route)

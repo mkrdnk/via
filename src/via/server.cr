@@ -2,10 +2,16 @@ module Via
   class Server
     getter address : Socket::IPAddress?
 
-    def initialize(config : ValidatedConfig, log : IO = STDERR)
-      proxy = Proxy.new(config.routes, log)
-      @http_server = HTTP::Server.new { |context| proxy.call(context) }
+    def initialize(config : ValidatedConfig, log : IO = STDERR, debug : Bool = false)
+      @state = RuntimeState.new(log, debug)
+      @state.apply(config)
       @listen = config.listen
+      @http_server = HTTP::Server.new { |context| @state.call(context) }
+      @address = nil
+    end
+
+    def initialize(@listen : ListenAddress, @state : RuntimeState)
+      @http_server = HTTP::Server.new { |context| @state.call(context) }
       @address = nil
     end
 
@@ -20,6 +26,7 @@ module Via
 
     def close : Nil
       @http_server.close
+      @state.close
     end
   end
 end

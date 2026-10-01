@@ -11,13 +11,21 @@ module Via
       "Upgrade",
     }
 
-    def initialize(routes : Enumerable(Route), @log : IO = STDERR)
+    def initialize(
+      routes : Enumerable(Route),
+      @log : IO = STDERR,
+      @debug : Bool = false,
+    )
       route_list = routes.to_a
       @router = Router.new(route_list)
       @clients = {} of String => ClientPool
       route_list.each do |route|
         @clients[route.upstream.to_s] ||= ClientPool.new(route.upstream)
       end
+    end
+
+    def close : Nil
+      @clients.each_value(&.close)
     end
 
     def call(context : HTTP::Server::Context) : Nil
@@ -51,10 +59,22 @@ module Via
         return
       end
 
+      if @debug
+        @log.puts(
+          "request_id=#{request_id} method=#{request.method.inspect} " \
+          "path=#{request.resource.inspect} upstream=#{route.upstream}"
+        )
+      end
+
       @clients[route.upstream.to_s].with do |client|
         headers = request_headers(request, route.upstream, request_id)
         client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
           response.status = upstream_response.status
+          if @debug
+            @log.puts(
+              "request_id=#{request_id} upstream_status=#{upstream_response.status_code}"
+            )
+          end
           copy_headers(upstream_response.headers, response.headers)
           response.headers["X-Request-ID"] = request_id
 

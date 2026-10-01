@@ -8,6 +8,14 @@ ensure
   server.close
 end
 
+private def with_temp_directory(&)
+  path = File.tempname("via-spec", "")
+  Dir.mkdir(path)
+  yield path
+ensure
+  FileUtils.rm_rf(path) if path && File.exists?(path)
+end
+
 describe Via::Config do
   it "loads and validates the minimal configuration" do
     config = Via::Config.from_yaml <<-YAML
@@ -101,6 +109,44 @@ describe Via::Config do
       config.validate
     end
   end
+
+  it "merges a directory of configuration fragments in filename order" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "00-server.yaml"), <<-YAML)
+        listen: ":8080"
+        YAML
+      File.write(File.join(directory, "10-api.yml"), <<-YAML)
+        routes:
+          - path: /api
+            proxy_pass: http://localhost:8000
+        YAML
+      File.write(File.join(directory, "20-app.yaml"), <<-YAML)
+        routes:
+          - path: /
+            proxy_pass: http://localhost:3000
+        YAML
+
+      config = Via::ConfigLoader.new(directory).load.validate
+      config.listen.should eq(Via::ListenAddress.new("0.0.0.0", 8080))
+      config.routes.map(&.path).should eq(["/api", "/"])
+    end
+  end
+
+  it "requires one listen declaration across directory fragments" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "one.yaml"), <<-YAML)
+        listen: ":8080"
+        proxy_pass: http://localhost:3000
+        YAML
+      File.write(File.join(directory, "two.yaml"), <<-YAML)
+        listen: ":8081"
+        YAML
+
+      expect_raises(Via::ConfigurationError, "declare listen exactly once") do
+        Via::ConfigLoader.new(directory).load
+      end
+    end
+  end
 end
 
 describe Via::Router do
@@ -151,6 +197,233 @@ describe Via::ErrorPages do
       body.should contain(status.description.not_nil!)
       body.should contain("Request ID: request-id")
     end
+  end
+end
+
+describe Via::ConfigWatcher do
+  it "debounces a burst of file changes" do
+    with_temp_directory do |directory|
+      path = File.join(directory, "via.yaml")
+      File.write(path, "listen: \":8080\"\n")
+      changes = Channel(Nil).new(2)
+      watcher = Via::ConfigWatcher.new(path, 10.milliseconds, 30.milliseconds)
+      watcher.start { changes.send(nil) }
+
+      begin
+        sleep 20.milliseconds
+        File.write(path, "listen: \":8081\"\n")
+        sleep 15.milliseconds
+        File.write(path, "listen: \":8082\"\nproxy_pass: http://localhost\n")
+
+        select
+        when changes.receive
+        when timeout(1.second)
+          fail "configuration watcher did not report a change"
+        end
+
+        select
+        when changes.receive
+          fail "configuration watcher emitted more than one debounced change"
+        when timeout(100.milliseconds)
+        end
+      ensure
+        watcher.stop
+      end
+    end
+  end
+
+  it "detects YAML files added to a configuration directory" do
+    with_temp_directory do |directory|
+      changes = Channel(Nil).new(1)
+      watcher = Via::ConfigWatcher.new(directory, 10.milliseconds, 20.milliseconds)
+      watcher.start { changes.send(nil) }
+
+      begin
+        sleep 20.milliseconds
+        File.write(File.join(directory, "route.yaml"), "routes: []\n")
+
+        select
+        when changes.receive
+        when timeout(1.second)
+          fail "configuration watcher did not detect a new YAML file"
+        end
+      ensure
+        watcher.stop
+      end
+    end
+  end
+end
+
+describe Via::RuntimeState do
+  it "atomically swaps proxy generations" do
+    first_entered = Channel(Nil).new(1)
+    release_first = Channel(Nil).new(1)
+    first_result = Channel(String | Exception).new(1)
+
+    first_upstream = HTTP::Server.new do |context|
+      first_entered.send(nil)
+      release_first.receive
+      context.response << "first"
+    end
+    second_upstream = HTTP::Server.new do |context|
+      context.response << "second"
+    end
+
+    with_server(first_upstream) do |first_address|
+      with_server(second_upstream) do |second_address|
+        state = Via::RuntimeState.new(IO::Memory.new)
+        state.apply(Via::ValidatedConfig.new(
+          Via::ListenAddress.new("127.0.0.1", 0),
+          [Via::Route.new(nil, "/", URI.parse("http://#{first_address}"))]
+        ))
+        proxy = Via::Server.new(Via::ListenAddress.new("127.0.0.1", 0), state)
+        proxy_address = proxy.bind
+        spawn proxy.listen
+
+        begin
+          spawn do
+            first_result.send(HTTP::Client.get("http://#{proxy_address}/").body)
+          rescue ex
+            first_result.send(ex)
+          end
+
+          first_entered.receive
+          state.apply(Via::ValidatedConfig.new(
+            Via::ListenAddress.new("127.0.0.1", 0),
+            [Via::Route.new(nil, "/", URI.parse("http://#{second_address}"))]
+          ))
+
+          HTTP::Client.get("http://#{proxy_address}/").body.should eq("second")
+          release_first.send(nil)
+          first_result.receive.should eq("first")
+        ensure
+          select
+          when release_first.send(nil)
+          else
+          end
+          proxy.close
+        end
+      end
+    end
+  end
+
+  it "reloads a watched configuration file" do
+    first_upstream = HTTP::Server.new { |context| context.response << "first-config" }
+    second_upstream = HTTP::Server.new { |context| context.response << "second-config" }
+
+    with_server(first_upstream) do |first_address|
+      with_server(second_upstream) do |second_address|
+        with_temp_directory do |directory|
+          path = File.join(directory, "via.yaml")
+          File.write(path, <<-YAML)
+            listen: "127.0.0.1:8080"
+            proxy_pass: http://#{first_address}
+            YAML
+
+          initial = Via::ConfigLoader.new(path).load.validate
+          state = Via::RuntimeState.new(IO::Memory.new)
+          state.apply(initial)
+          proxy = Via::Server.new(Via::ListenAddress.new("127.0.0.1", 0), state)
+          proxy_address = proxy.bind
+          spawn proxy.listen
+          reloader = Via::ConfigReloader.new(
+            path,
+            initial.listen,
+            state,
+            IO::Memory.new,
+            poll_interval: 10.milliseconds,
+            debounce: 20.milliseconds
+          )
+          reloader.start
+
+          begin
+            HTTP::Client.get("http://#{proxy_address}/").body.should eq("first-config")
+            sleep 20.milliseconds
+            File.write(path, <<-YAML)
+              listen: "127.0.0.1:8080"
+              proxy_pass: http://#{second_address}
+              YAML
+
+            deadline = Time.instant + 1.second
+            body = ""
+            until body == "second-config" || Time.instant >= deadline
+              sleep 20.milliseconds
+              body = HTTP::Client.get("http://#{proxy_address}/").body
+            end
+            body.should eq("second-config")
+
+            File.write(path, <<-YAML)
+              listen: "127.0.0.1:8080"
+              proxy_pass: not-a-url
+              YAML
+            reloader.reload.should be_false
+            HTTP::Client.get("http://#{proxy_address}/").body.should eq("second-config")
+          ensure
+            reloader.stop
+            proxy.close
+          end
+        end
+      end
+    end
+  end
+
+  it "shows diagnostics in debug mode and recovers after a valid config" do
+    upstream = HTTP::Server.new { |context| context.response << "working" }
+
+    with_server(upstream) do |upstream_address|
+      log = IO::Memory.new
+      state = Via::RuntimeState.new(log, debug: true)
+      state.reject("via.yaml", Via::ConfigurationError.new("Invalid upstream URL"))
+      proxy = Via::Server.new(Via::ListenAddress.new("127.0.0.1", 0), state)
+      address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        diagnostic = HTTP::Client.get("http://#{address}/")
+        diagnostic.status.should eq(HTTP::Status::SERVICE_UNAVAILABLE)
+        diagnostic.body.should contain("via debug")
+        diagnostic.body.should contain("via.yaml")
+        diagnostic.body.should contain("Invalid upstream URL")
+
+        state.apply(Via::ValidatedConfig.new(
+          Via::ListenAddress.new("127.0.0.1", 0),
+          [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))]
+        ))
+        HTTP::Client.get("http://#{address}/").body.should eq("working")
+      ensure
+        proxy.close
+      end
+    end
+  end
+
+  it "keeps the previous generation after a production reload error" do
+    upstream = HTTP::Server.new { |context| context.response << "unchanged" }
+
+    with_server(upstream) do |upstream_address|
+      state = Via::RuntimeState.new(IO::Memory.new)
+      state.apply(Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))]
+      ))
+      state.reject("via.yaml", Via::ConfigurationError.new("broken reload"))
+      proxy = Via::Server.new(Via::ListenAddress.new("127.0.0.1", 0), state)
+      address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        HTTP::Client.get("http://#{address}/").body.should eq("unchanged")
+      ensure
+        proxy.close
+      end
+    end
+  end
+end
+
+describe Via::CLI do
+  it "documents debug mode in CLI help" do
+    output = IO::Memory.new
+    Via::CLI.run(["--help"], output, IO::Memory.new).should eq(0)
+    output.to_s.should contain("--debug")
   end
 end
 

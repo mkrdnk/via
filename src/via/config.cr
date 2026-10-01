@@ -14,12 +14,19 @@ module Via
     include YAML::Serializable
     include YAML::Serializable::Strict
 
-    getter listen : String
+    getter listen : String?
 
     @[YAML::Field(key: "proxy_pass")]
     getter proxy_pass : String?
 
     getter routes : Array(RouteConfig)?
+
+    def initialize(
+      @listen : String? = nil,
+      @proxy_pass : String? = nil,
+      @routes : Array(RouteConfig)? = nil,
+    )
+    end
 
     def self.load(path : String) : self
       File.open(path) { |file| from_yaml(file) }
