@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.1.1/deployment/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>GitHub Pages deployment - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "GitHub Pages deployment";
+        var mkdocs_page_input_path = "deployment.md";
+        var mkdocs_page_url = "/docs/0.1.1/deployment/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../routing/">Routing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Running as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operations</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Debug mode and hot reload</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logging</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../errors/">Error pages and request IDs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../releases/">Releases</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">GitHub Pages deployment</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#versioned-documentation">Versioned documentation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#repository-settings">Repository settings</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dns">DNS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#workflow">Workflow</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Internals</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxy-behavior/">Proxy behavior</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../development/">Development and benchmarking</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Operations</li>
+      <li class="breadcrumb-item active">GitHub Pages deployment</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/deployment.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="github-pages-deployment">GitHub Pages deployment</h1>
+<p>The project website is published at:</p>
+<pre><code class="language-text">https://via.makridenko.com/
+</code></pre>
+<p>GitHub Pages serves the production static artifact. Via is still part of every
+deployment: the workflow builds the HTTP-only binary, starts Via with a static
+route, and verifies the complete site through real HTTP requests before the
+artifact can be uploaded.</p>
+<p>The workflow runs when a GitHub Release is published and checks out that
+release tag. Documentation therefore represents a published version rather
+than an arbitrary commit from <code>master</code>. A manual dispatch remains available
+for recovery.</p>
+<h2 id="versioned-documentation">Versioned documentation</h2>
+<p>Generated documentation is preserved in the <code>gh-pages</code> branch through
+<code>mike</code>:</p>
+<pre><code class="language-text">/docs/0.1.0/
+/docs/0.2.0/
+/docs/latest/  → latest published version
+/docs/         → latest
+</code></pre>
+<p>Publishing a release adds or replaces only that version. Previously generated
+versions remain byte-for-byte available and appear in the documentation
+version selector.</p>
+<p>The landing page and shared branding assets remain at the site root. The
+<code>gh-pages</code> branch stores generated output; Pages deployment still uses the
+verified Actions artifact assembled from that branch.</p>
+<p>The smoke-test configuration is
+<code>.github/pages/via.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;127.0.0.1:8080&quot;
+
+routes:
+  - path: /
+    static: ./site
+</code></pre>
+<p>Run the same workflow locally:</p>
+<pre><code class="language-sh">make pages-smoke
+</code></pre>
+<p>Or keep Via running as the preview server:</p>
+<pre><code class="language-sh">make docs-serve
+</code></pre>
+<h2 id="repository-settings">Repository settings</h2>
+<p>In GitHub, open <strong>Settings → Pages</strong> and configure:</p>
+<ol>
+<li>Source: <strong>GitHub Actions</strong>.</li>
+<li>Custom domain: <code>via.makridenko.com</code>.</li>
+<li>Enable <strong>Enforce HTTPS</strong> after the certificate is issued.</li>
+</ol>
+<h2 id="dns">DNS</h2>
+<p>Create this DNS record for <code>makridenko.com</code>:</p>
+<pre><code class="language-text">Type:   CNAME
+Name:   via
+Target: mkrdnk.github.io
+</code></pre>
+<p>DNS and certificate provisioning happen outside the repository. The committed
+<code>CNAME</code> file ensures the generated Pages artifact retains the custom domain.</p>
+<h2 id="workflow">Workflow</h2>
+<p><code>.github/workflows/pages.yml</code> performs:</p>
+<ol>
+<li>checkout of the published release tag;</li>
+<li>Crystal and MkDocs setup;</li>
+<li>static site build;</li>
+<li>versioned MkDocs deployment into the local <code>gh-pages</code> branch;</li>
+<li>landing page composition;</li>
+<li>HTTP-only Via build;</li>
+<li>end-to-end requests through Via;</li>
+<li>persistence of the generated versions to <code>gh-pages</code>;</li>
+<li>Pages artifact upload;</li>
+<li>deployment to the <code>github-pages</code> environment.</li>
+</ol>
+<p>GitHub Pages itself cannot execute the Via binary. Production bytes are served
+by GitHub's Pages infrastructure; Via provides the canonical local server and
+the deployment gate.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../releases/" class="btn btn-neutral float-left" title="Releases"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../proxy-behavior/" class="btn btn-neutral float-right" title="Proxy behavior">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../releases/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../proxy-behavior/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

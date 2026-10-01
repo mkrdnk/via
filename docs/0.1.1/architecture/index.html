@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.1.1/architecture/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Architecture - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Architecture";
+        var mkdocs_page_input_path = "architecture.md";
+        var mkdocs_page_url = "/docs/0.1.1/architecture/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../routing/">Routing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Running as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operations</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Debug mode and hot reload</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logging</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../errors/">Error pages and request IDs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../releases/">Releases</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../deployment/">GitHub Pages deployment</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Internals</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../proxy-behavior/">Proxy behavior</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Architecture</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#code-boundaries">Code boundaries</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#request-flow">Request flow</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-generations">Configuration generations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#streaming-and-backpressure">Streaming and backpressure</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../development/">Development and benchmarking</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Internals</li>
+      <li class="breadcrumb-item active">Architecture</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/architecture.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="architecture">Architecture</h1>
+<p>Via is a concurrent streaming I/O proxy.</p>
+<p>Each accepted client connection runs in an independent Crystal fiber. Socket
+waits yield to the Crystal runtime scheduler, and Via does not put requests
+behind a global lock. Independent client connections can therefore make
+progress concurrently.</p>
+<h2 id="code-boundaries">Code boundaries</h2>
+<p>The implementation is split into bounded modules:</p>
+<pre><code class="language-text">Via::Configuration  YAML model, validation, loading, watching, reload
+Via::Routing        immutable route targets and route selection
+Via::HTTP           request IDs, error pages, forwarding header policy
+Via::Proxy          upstream transport and connection pooling
+Via::Runtime        atomic generations and diagnostic state
+Via::Static         filesystem containment and file serving
+Via::TLS            contexts and reloadable TLS listener
+</code></pre>
+<p>The source tree mirrors these namespaces under <code>src/via/</code>. <code>Via::Server</code> and
+<code>Via::CLI</code> remain at the root because they compose modules into listener and
+process lifecycles.</p>
+<p>This keeps configuration, routing, transport, and lifecycle decisions
+independent and directly testable.</p>
+<h2 id="request-flow">Request flow</h2>
+<pre><code class="language-mermaid">flowchart TD
+    Request[&quot;HTTP request&quot;] --&gt; Router
+    Router --&gt; Route
+    Route --&gt; ProxyTarget[&quot;Proxy target&quot;]
+    Route --&gt; StaticTarget[&quot;Static target&quot;]
+    ProxyTarget --&gt; Pool[&quot;Upstream connection pool&quot;]
+    Pool --&gt; Upstream[&quot;HTTP upstream&quot;]
+    StaticTarget --&gt; Filesystem[&quot;Validated filesystem root&quot;]
+</code></pre>
+<p>The router is independent of the HTTP server and client transports. It only
+selects a validated route from a hostname and path.</p>
+<p>Each active upstream request owns its <code>HTTP::Client</code>; clients are never shared
+concurrently between fibers. Successfully completed clients return to a
+bounded idle pool and can reuse their keep-alive connections.</p>
+<h2 id="configuration-generations">Configuration generations</h2>
+<p>A validated configuration creates an immutable proxy generation containing its
+router and upstream connection pools. Hot reload builds the replacement before
+acquiring the runtime state lock, then swaps one generation reference.</p>
+<p>The previous generation is retired rather than closed immediately. It tracks
+active requests and closes its idle upstream clients once its last request
+finishes. This keeps reload atomic without interrupting in-flight streams.</p>
+<p>For TLS listeners, each accepted TCP connection snapshots the current
+<code>OpenSSL::SSL::Context::Server</code> before its handshake. Configuration reload
+creates and validates a replacement context before publishing it with the new
+proxy generation. Existing TLS connections continue normally; new connections
+receive the replacement certificate.</p>
+<p>Static routes use the same immutable routing generation as proxy routes.
+Validated static roots are canonical paths. Each request is decoded and
+resolved again so traversal attempts and symlinks escaping the root cannot
+bypass configuration-time validation.</p>
+<h2 id="streaming-and-backpressure">Streaming and backpressure</h2>
+<p>Via passes the incoming request body directly to the upstream HTTP client. It
+copies the upstream response through a fixed-size buffer instead of loading the
+entire body into memory.</p>
+<p>When either side becomes slower, socket writes suspend the current fiber and
+backpressure propagates through the stream. Body size therefore does not
+determine Via's buffering requirement.</p>
+<p>Hop-by-hop headers are removed at each proxy boundary. End-to-end request and
+response headers, methods, paths, queries, and response statuses are forwarded.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../proxy-behavior/" class="btn btn-neutral float-left" title="Proxy behavior"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../development/" class="btn btn-neutral float-right" title="Development and benchmarking">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../proxy-behavior/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../development/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

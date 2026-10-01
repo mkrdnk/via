@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.1.1/development/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Development and benchmarking - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Development and benchmarking";
+        var mkdocs_page_input_path = "development.md";
+        var mkdocs_page_url = "/docs/0.1.1/development/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../routing/">Routing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Running as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operations</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Debug mode and hot reload</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logging</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../errors/">Error pages and request IDs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../releases/">Releases</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../deployment/">GitHub Pages deployment</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Internals</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxy-behavior/">Proxy behavior</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                  </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Development and benchmarking</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#checks">Checks</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#baseline-benchmark">Baseline benchmark</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Development and benchmarking</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/development.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="development-and-benchmarking">Development and benchmarking</h1>
+<h2 id="checks">Checks</h2>
+<p>The Makefile is the primary development entry point. Run the complete check:</p>
+<pre><code class="language-sh">make check
+</code></pre>
+<p>Useful targets:</p>
+<pre><code class="language-sh">make build          # development binary
+make release        # optimized binary
+make doctor         # inspect Crystal and OpenSSL availability
+make run            # run with CONFIG=config.yaml
+make debug          # run --debug with CONFIG=config.yaml
+make test
+make format
+make format-check
+make docs
+make docs-serve
+</code></pre>
+<p><code>make docs</code> builds the landing page at <code>site/index.html</code> and MkDocs under
+<code>site/docs/</code>. Preview both from one local origin:</p>
+<pre><code class="language-sh">make docs-serve
+# http://localhost:8000/
+# http://localhost:8000/docs/
+</code></pre>
+<p>The preview server is Via itself, using <code>.github/pages/via.yaml</code>. Run the
+non-interactive deployment smoke test with:</p>
+<pre><code class="language-sh">make pages-smoke
+</code></pre>
+<p>Override <code>CONFIG</code> when running:</p>
+<pre><code class="language-sh">make debug CONFIG=/etc/via/config/
+</code></pre>
+<p>An HTTP-only build does not link OpenSSL:</p>
+<pre><code class="language-sh">make release-http
+make test-http
+make check-http
+</code></pre>
+<h2 id="baseline-benchmark">Baseline benchmark</h2>
+<p>Start an upstream on port 3000, run Via with the minimal configuration, and use
+a fixed payload and concurrency:</p>
+<pre><code class="language-sh">make benchmark URL=http://127.0.0.1:8080/
+</code></pre>
+<p>Record at least:</p>
+<ul>
+<li>requests per second;</li>
+<li>transfer rate;</li>
+<li>p50, p95, and p99 latency;</li>
+<li>CPU usage;</li>
+<li>maximum RSS;</li>
+<li>concurrent connection count.</li>
+</ul>
+<p>Run each benchmark at least three times in release mode and compare medians.
+Keep the host, upstream, payload, connection count, and benchmark duration
+unchanged between revisions.</p>
+<p>Performance work should follow profiling. The baseline exists to reveal
+regressions and bottlenecks, not to support claims that Via is faster than
+another proxy.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../architecture/" class="btn btn-neutral float-left" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../architecture/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

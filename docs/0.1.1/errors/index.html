@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.1.1/errors/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Error pages and request IDs - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Error pages and request IDs";
+        var mkdocs_page_input_path = "errors.md";
+        var mkdocs_page_url = "/docs/0.1.1/errors/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../routing/">Routing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Running as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operations</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Debug mode and hot reload</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logging</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Error pages and request IDs</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#request-ids">Request IDs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#failure-behavior">Failure behavior</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../releases/">Releases</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../deployment/">GitHub Pages deployment</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Internals</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxy-behavior/">Proxy behavior</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../development/">Development and benchmarking</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Operations</li>
+      <li class="breadcrumb-item active">Error pages and request IDs</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/errors.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="error-pages-and-request-ids">Error pages and request IDs</h1>
+<p>Via embeds its error pages in the executable. They do not depend on static
+assets or files installed next to the binary.</p>
+<p>The error page renderer supports:</p>
+<ul>
+<li><code>400 Bad Request</code>;</li>
+<li><code>404 Not Found</code>;</li>
+<li><code>405 Method Not Allowed</code>;</li>
+<li><code>416 Range Not Satisfiable</code>;</li>
+<li><code>502 Bad Gateway</code>;</li>
+<li><code>503 Service Unavailable</code>;</li>
+<li><code>504 Gateway Timeout</code>.</li>
+</ul>
+<p><code>503</code> is reserved for temporarily unavailable runtime state, and <code>504</code> will be
+used by configurable upstream timeouts. Those conditions are not emitted yet.</p>
+<p>Error responses are self-contained HTML pages. The Via favicon is embedded in
+the binary and referenced through a data URI, so it works even when no static
+route or external asset directory is available.</p>
+<p>The visible page remains intentionally minimal:</p>
+<pre><code class="language-text">via
+
+502
+Bad Gateway
+
+The upstream server could not be reached.
+
+Request ID: 8efb1e82e14bd13639d777ca8b17e843
+</code></pre>
+<p>Debug configuration diagnostics use the same layout and favicon.</p>
+<h2 id="request-ids">Request IDs</h2>
+<p>Via generates a cryptographically random 128-bit request ID for every request.
+It does not trust a client-supplied ID.</p>
+<p>The same lowercase hexadecimal ID is:</p>
+<ul>
+<li>returned in the <code>X-Request-ID</code> response header;</li>
+<li>sent to the upstream in the <code>X-Request-ID</code> request header;</li>
+<li>printed on built-in error pages;</li>
+<li>included in Via's error log entry.</li>
+</ul>
+<p>This makes a browser-visible failure traceable to the corresponding proxy log
+and upstream request.</p>
+<h2 id="failure-behavior">Failure behavior</h2>
+<p>Via currently emits:</p>
+<ul>
+<li><code>400</code> when an HTTP/1.1 request has no valid <code>Host</code> header;</li>
+<li><code>404</code> when no route matches;</li>
+<li><code>405</code> for unsupported methods on static routes;</li>
+<li><code>416</code> for invalid or unsatisfiable static byte ranges;</li>
+<li><code>502</code> when the selected upstream cannot be reached or disconnects before
+  returning a response.</li>
+</ul>
+<p>If an upstream or downstream disconnect happens after response bytes have
+started, Via cannot replace the response with an error page. It terminates the
+partial stream and logs the failure with its request ID.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../logging/" class="btn btn-neutral float-left" title="Logging"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../releases/" class="btn btn-neutral float-right" title="Releases">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../logging/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../releases/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
