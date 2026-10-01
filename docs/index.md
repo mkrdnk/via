@@ -12,6 +12,7 @@ development milestone provides:
 - reusable upstream connections;
 - atomic hot reload for file and directory configurations;
 - manual TLS termination with certificate reload;
+- static files with cache validators, ranges, and SPA fallback;
 - debug diagnostics for invalid configuration;
 - strict YAML configuration and validation;
 - built-in gateway error pages with request IDs.
@@ -23,8 +24,8 @@ advanced load-balancing algorithms.
 ## Current status
 
 Via is under active development and is not yet a stable production release.
-Static files, WebSocket proxying, configurable headers, and upstream timeouts
-remain on the roadmap.
+WebSocket proxying, configurable headers, and upstream timeouts remain on the
+roadmap.
 
 Start with [Getting started](getting-started.md), then see
 [Configuration and routing](configuration.md) for route matching behavior and

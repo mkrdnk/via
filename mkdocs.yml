@@ -8,6 +8,7 @@ nav:
   - Error pages and request IDs: errors.md
   - Debug mode and hot reload: hot-reload.md
   - TLS: tls.md
+  - Static files: static-files.md
   - Architecture: architecture.md
   - Development and benchmarking: development.md
 

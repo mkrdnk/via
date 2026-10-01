@@ -123,3 +123,30 @@ proxy_pass: http://localhost:8000
 
 Both files must exist and be readable. See [TLS](tls.md) for runtime and reload
 behavior.
+
+## Static routes
+
+A route may serve a directory instead of proxying:
+
+```yaml
+routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+
+  - path: /
+    static: ./dist
+```
+
+For SPA fallback behavior, use the object form:
+
+```yaml
+routes:
+  - path: /
+    static:
+      root: ./dist
+      fallback: index.html
+```
+
+Each route must contain exactly one of `proxy_pass` or `static`. See
+[Static files](static-files.md) for path mapping, caching, range requests, and
+security behavior.

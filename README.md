@@ -30,11 +30,12 @@ bin/via -c via.yaml
 - [Error pages and request IDs](docs/errors.md)
 - [Debug mode and hot reload](docs/hot-reload.md)
 - [TLS](docs/tls.md)
+- [Static files](docs/static-files.md)
 - [Architecture](docs/architecture.md)
 - [Development and benchmarking](docs/development.md)
 
-Via is under active development. Static files, WebSocket proxying,
-configurable headers, and upstream timeouts are planned but not yet available.
+Via is under active development. WebSocket proxying, configurable headers, and
+upstream timeouts are planned but not yet available.
 
 ## License
 

@@ -44,6 +44,11 @@ creates and validates a replacement context before publishing it with the new
 proxy generation. Existing TLS connections continue normally; new connections
 receive the replacement certificate.
 
+Static routes use the same immutable routing generation as proxy routes.
+Validated static roots are canonical paths. Each request is decoded and
+resolved again so traversal attempts and symlinks escaping the root cannot
+bypass configuration-time validation.
+
 ## Streaming and backpressure
 
 Via passes the incoming request body directly to the upstream HTTP client. It
