@@ -1,5 +1,10 @@
 module Via
-  record Route, host : String?, path : String, upstream : URI
+  record StaticTarget, root : String, fallback : String?
+  record Route,
+    host : String?,
+    path : String,
+    upstream : URI?,
+    static_target : StaticTarget? = nil
 
   # Selects a route without depending on HTTP server or client types.
   #

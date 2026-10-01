@@ -190,6 +190,66 @@ describe Via::Config do
       end
     end
   {% end %}
+
+  it "validates string and object static routes" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "index.html"), "index")
+
+      string_config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        routes:
+          - path: /
+            static: #{directory}
+        YAML
+      string_target = string_config.validate.routes.first.static_target.not_nil!
+      string_target.root.should eq(File.realpath(directory))
+      string_target.fallback.should be_nil
+
+      object_config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        routes:
+          - path: /
+            static:
+              root: #{directory}
+              fallback: index.html
+        YAML
+      object_target = object_config.validate.routes.first.static_target.not_nil!
+      object_target.fallback.should eq("index.html")
+    end
+  end
+
+  it "requires exactly one route target" do
+    with_temp_directory do |directory|
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        routes:
+          - path: /
+            static: #{directory}
+            proxy_pass: http://localhost:3000
+        YAML
+
+      expect_raises(Via::ConfigurationError, "either proxy_pass or static") do
+        config.validate
+      end
+    end
+  end
+
+  it "rejects a static fallback outside its root" do
+    with_temp_directory do |directory|
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        routes:
+          - path: /
+            static:
+              root: #{directory}
+              fallback: ../secret.html
+        YAML
+
+      expect_raises(Via::ConfigurationError, "Invalid static fallback") do
+        config.validate
+      end
+    end
+  end
 end
 
 describe Via::Router do
@@ -498,6 +558,153 @@ describe Via::CLI do
     output = IO::Memory.new
     Via::CLI.run(["--help"], output, IO::Memory.new).should eq(0)
     output.to_s.should contain("--debug")
+  end
+end
+
+describe Via::StaticFiles do
+  it "serves GET, HEAD, index files, and cache validators" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "index.html"), "<h1>home</h1>")
+      File.write(File.join(directory, "app.js"), "console.log('via');")
+      Dir.mkdir(File.join(directory, "docs"))
+      File.write(File.join(directory, "docs", "index.html"), "documentation")
+
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", nil, Via::StaticTarget.new(File.realpath(directory), nil))]
+      )
+      server = Via::Server.new(config, IO::Memory.new)
+      address = server.bind
+      spawn server.listen
+
+      begin
+        index = HTTP::Client.get("http://#{address}/")
+        index.body.should eq("<h1>home</h1>")
+        index.headers["Content-Type"].should eq(MIME.from_filename("index.html"))
+
+        file = HTTP::Client.get("http://#{address}/app.js")
+        file.body.should eq("console.log('via');")
+        file.headers["Content-Length"].should eq(file.body.bytesize.to_s)
+        file.headers["Accept-Ranges"].should eq("bytes")
+        file.headers["ETag"].should_not be_empty
+        file.headers["Last-Modified"].should_not be_empty
+
+        head = HTTP::Client.head("http://#{address}/app.js")
+        head.status.should eq(HTTP::Status::OK)
+        head.body.should be_empty
+        head.headers["Content-Length"].should eq(file.body.bytesize.to_s)
+
+        cached = HTTP::Client.get(
+          "http://#{address}/app.js",
+          headers: HTTP::Headers{"If-None-Match" => file.headers["ETag"]}
+        )
+        cached.status.should eq(HTTP::Status::NOT_MODIFIED)
+        cached.body.should be_empty
+
+        redirect = HTTP::Client.get("http://#{address}/docs")
+        redirect.status.should eq(HTTP::Status::MOVED_PERMANENTLY)
+        redirect.headers["Location"].should eq("/docs/")
+
+        HTTP::Client.get("http://#{address}/docs/").body.should eq("documentation")
+      ensure
+        server.close
+      end
+    end
+  end
+
+  it "supports byte ranges and rejects unsupported ranges" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "data.txt"), "0123456789")
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", nil, Via::StaticTarget.new(File.realpath(directory), nil))]
+      )
+      server = Via::Server.new(config, IO::Memory.new)
+      address = server.bind
+      spawn server.listen
+
+      begin
+        partial = HTTP::Client.get(
+          "http://#{address}/data.txt",
+          headers: HTTP::Headers{"Range" => "bytes=2-5"}
+        )
+        partial.status.should eq(HTTP::Status::PARTIAL_CONTENT)
+        partial.body.should eq("2345")
+        partial.headers["Content-Range"].should eq("bytes 2-5/10")
+        partial.headers["Content-Length"].should eq("4")
+
+        suffix = HTTP::Client.get(
+          "http://#{address}/data.txt",
+          headers: HTTP::Headers{"Range" => "bytes=-3"}
+        )
+        suffix.body.should eq("789")
+
+        unsatisfied = HTTP::Client.get(
+          "http://#{address}/data.txt",
+          headers: HTTP::Headers{"Range" => "bytes=20-30"}
+        )
+        unsatisfied.status.should eq(HTTP::Status::RANGE_NOT_SATISFIABLE)
+        unsatisfied.headers["Content-Range"].should eq("bytes */10")
+      ensure
+        server.close
+      end
+    end
+  end
+
+  it "serves an SPA fallback and strips the matched route prefix" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "index.html"), "spa")
+      File.write(File.join(directory, "asset.txt"), "asset")
+      target = Via::StaticTarget.new(File.realpath(directory), "index.html")
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/public", nil, target)]
+      )
+      server = Via::Server.new(config, IO::Memory.new)
+      address = server.bind
+      spawn server.listen
+
+      begin
+        HTTP::Client.get("http://#{address}/public/asset.txt").body.should eq("asset")
+        HTTP::Client.get("http://#{address}/public/dashboard").body.should eq("spa")
+      ensure
+        server.close
+      end
+    end
+  end
+
+  it "rejects traversal, symlink escapes, and unsupported methods" do
+    with_temp_directory do |directory|
+      root = File.join(directory, "public")
+      Dir.mkdir(root)
+      secret = File.join(directory, "secret.txt")
+      File.write(secret, "secret")
+      File.symlink(secret, File.join(root, "leak.txt"))
+
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", nil, Via::StaticTarget.new(File.realpath(root), nil))]
+      )
+      server = Via::Server.new(config, IO::Memory.new)
+      address = server.bind
+      spawn server.listen
+
+      begin
+        traversal = HTTP::Client.get("http://#{address}/%2e%2e/secret.txt")
+        traversal.status.should eq(HTTP::Status::NOT_FOUND)
+        traversal.body.should_not contain("secret")
+
+        symlink = HTTP::Client.get("http://#{address}/leak.txt")
+        symlink.status.should eq(HTTP::Status::NOT_FOUND)
+        symlink.body.should_not contain("secret")
+
+        post = HTTP::Client.post("http://#{address}/file.txt", body: "ignored")
+        post.status.should eq(HTTP::Status::METHOD_NOT_ALLOWED)
+        post.headers["Allow"].should eq("GET, HEAD")
+      ensure
+        server.close
+      end
+    end
   end
 end
 
@@ -1046,7 +1253,7 @@ describe Via::Proxy do
         headers: HTTP::Headers{"Host" => "other.example.com"}
       )
       response.status.should eq(HTTP::Status::NOT_FOUND)
-      response.body.should contain("No route matched this request.")
+      response.body.should contain("The requested resource was not found.")
       request_id = response.headers["X-Request-ID"]
       request_id.should match(/\A[0-9a-f]{32}\z/)
       response.body.should contain("Request ID: #{request_id}")

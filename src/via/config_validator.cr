@@ -54,10 +54,24 @@ module Via
       end
 
       route_configs.map_with_index do |route, index|
+        upstream = route.proxy_pass
+        static_config = route.static_config
+        if upstream && static_config
+          raise ConfigurationError.new(
+            "routes[#{index}] must use either proxy_pass or static, not both"
+          )
+        end
+        unless upstream || static_config
+          raise ConfigurationError.new(
+            "routes[#{index}] requires proxy_pass or static"
+          )
+        end
+
         Route.new(
           parse_host(route.host, index),
           parse_path(route.path, index),
-          parse_upstream(route.proxy_pass, "routes[#{index}].proxy_pass")
+          upstream ? parse_upstream(upstream, "routes[#{index}].proxy_pass") : nil,
+          static_config ? parse_static(static_config, index) : nil
         )
       end
     end
@@ -125,6 +139,55 @@ module Via
       raise ConfigurationError.new("Invalid upstream URL in #{field}: #{value}")
     end
 
+    private def parse_static(value : String | StaticConfig, route_index : Int32) : StaticTarget
+      config = value.is_a?(String) ? StaticConfig.new(value) : value
+      root = begin
+        File.realpath(config.root)
+      rescue File::Error
+        raise ConfigurationError.new(
+          "Static root in routes[#{route_index}] is not a readable directory: #{config.root}"
+        )
+      end
+
+      unless File.directory?(root) && File::Info.readable?(root)
+        raise ConfigurationError.new(
+          "Static root in routes[#{route_index}] is not a readable directory: #{config.root}"
+        )
+      end
+
+      fallback = config.fallback
+      if fallback
+        validate_static_fallback(root, fallback, route_index)
+      end
+
+      StaticTarget.new(root, fallback)
+    end
+
+    private def validate_static_fallback(root : String, fallback : String, route_index : Int32) : Nil
+      if fallback.empty? || Path[fallback].absolute? || fallback.includes?('\\') ||
+         fallback.split('/').includes?("..")
+        raise ConfigurationError.new(
+          "Invalid static fallback in routes[#{route_index}]: #{fallback}"
+        )
+      end
+
+      path = File.expand_path(fallback, root)
+      real_path = begin
+        File.realpath(path)
+      rescue File::Error
+        raise ConfigurationError.new(
+          "Static fallback in routes[#{route_index}] is not a readable file: #{fallback}"
+        )
+      end
+
+      unless inside_root?(root, real_path) && File.file?(real_path) &&
+             File::Info.readable?(real_path)
+        raise ConfigurationError.new(
+          "Static fallback in routes[#{route_index}] is not a readable file: #{fallback}"
+        )
+      end
+    end
+
     private def reject_duplicate_routes(routes : Array(Route)) : Nil
       seen = Set(Tuple(String?, String)).new
 
@@ -139,6 +202,10 @@ module Via
 
     private def valid_hostname?(hostname : String) : Bool
       !hostname.empty? && hostname.each_char.none?(&.whitespace?)
+    end
+
+    private def inside_root?(root : String, path : String) : Bool
+      path == root || path.starts_with?("#{root}#{File::SEPARATOR}")
     end
 
     private def validate_tls_file(path : String, field : String) : Nil

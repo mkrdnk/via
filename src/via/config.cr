@@ -10,6 +10,17 @@ module Via
     end
   end
 
+  class StaticConfig
+    include YAML::Serializable
+    include YAML::Serializable::Strict
+
+    getter root : String
+    getter fallback : String?
+
+    def initialize(@root : String, @fallback : String? = nil)
+    end
+  end
+
   class RouteConfig
     include YAML::Serializable
     include YAML::Serializable::Strict
@@ -18,7 +29,10 @@ module Via
     getter path : String = "/"
 
     @[YAML::Field(key: "proxy_pass")]
-    getter proxy_pass : String
+    getter proxy_pass : String?
+
+    @[YAML::Field(key: "static")]
+    getter static_config : String | StaticConfig | Nil
   end
 
   class Config

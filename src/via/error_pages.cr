@@ -9,7 +9,7 @@ module Via
       ),
       HTTP::Status::NOT_FOUND => Definition.new(
         "Not Found",
-        "No route matched this request."
+        "The requested resource was not found."
       ),
       HTTP::Status::BAD_GATEWAY => Definition.new(
         "Bad Gateway",

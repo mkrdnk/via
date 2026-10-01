@@ -21,7 +21,9 @@ module Via
       @router = Router.new(route_list)
       @clients = {} of String => ClientPool
       route_list.each do |route|
-        @clients[route.upstream.to_s] ||= ClientPool.new(route.upstream)
+        if upstream = route.upstream
+          @clients[upstream.to_s] ||= ClientPool.new(upstream)
+        end
       end
     end
 
@@ -60,15 +62,27 @@ module Via
         return
       end
 
+      if static_target = route.static_target
+        if @debug
+          @log.puts(
+            "request_id=#{request_id} method=#{request.method.inspect} " \
+            "path=#{request.resource.inspect} static_root=#{static_target.root.inspect}"
+          )
+        end
+        StaticFiles.call(context, route.path, static_target, request_id)
+        return
+      end
+
+      upstream = route.upstream.not_nil!
       if @debug
         @log.puts(
           "request_id=#{request_id} method=#{request.method.inspect} " \
-          "path=#{request.resource.inspect} upstream=#{route.upstream}"
+          "path=#{request.resource.inspect} upstream=#{upstream}"
         )
       end
 
-      @clients[route.upstream.to_s].with do |client|
-        headers = request_headers(request, route.upstream, request_id)
+      @clients[upstream.to_s].with do |client|
+        headers = request_headers(request, upstream, request_id)
         client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
           response.status = upstream_response.status
           if @debug
