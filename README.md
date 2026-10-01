@@ -9,7 +9,18 @@ reloads.
 
 ## Quick start
 
+Via requires Crystal 1.21.1 or newer and OpenSSL development files:
+
 ```sh
+# Fedora
+sudo dnf install openssl-devel
+
+# Debian/Ubuntu
+sudo apt install libssl-dev pkg-config
+```
+
+```sh
+make doctor
 make release
 ```
 
@@ -20,6 +31,12 @@ proxy_pass: http://localhost:3000
 
 ```sh
 bin/via -c via.yaml
+```
+
+For an HTTP-only build without OpenSSL development files:
+
+```sh
+make release-http
 ```
 
 ## Documentation

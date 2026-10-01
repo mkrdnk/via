@@ -6,17 +6,35 @@ WRK ?= wrk
 CONFIG ?= config.yaml
 URL ?= http://127.0.0.1:8080/
 
-.PHONY: all build build-http release release-http run debug test test-http format format-check docs docs-serve check check-http benchmark clean
+.PHONY: all doctor check-openssl build build-http release release-http run debug test test-http format format-check docs docs-serve check check-http benchmark clean
 
 all: build
 
-build:
+doctor:
+	@printf 'Crystal: '; $(CRYSTAL) --version
+	@printf 'OpenSSL development files: '; \
+	if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libssl libcrypto; then \
+		echo 'available'; \
+	else \
+		echo 'missing (TLS builds are unavailable; HTTP-only builds still work)'; \
+	fi
+
+check-openssl:
+	@if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists libssl libcrypto; then \
+		echo 'OpenSSL development files are required for TLS builds.' >&2; \
+		echo 'Fedora:        sudo dnf install openssl-devel' >&2; \
+		echo 'Debian/Ubuntu: sudo apt install libssl-dev pkg-config' >&2; \
+		echo 'Or build without TLS: make build-http' >&2; \
+		exit 1; \
+	fi
+
+build: check-openssl
 	$(SHARDS) build
 
 build-http:
 	$(SHARDS) build -Dwithout_openssl
 
-release:
+release: check-openssl
 	$(SHARDS) build --release --production --no-debug
 
 release-http:
@@ -28,7 +46,7 @@ run: build
 debug: build
 	./bin/via --debug -c $(CONFIG)
 
-test:
+test: check-openssl
 	$(CRYSTAL) spec
 
 test-http:

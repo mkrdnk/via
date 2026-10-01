@@ -13,6 +13,7 @@ Useful targets:
 ```sh
 make build          # development binary
 make release        # optimized binary
+make doctor         # inspect Crystal and OpenSSL availability
 make run            # run with CONFIG=config.yaml
 make debug          # run --debug with CONFIG=config.yaml
 make test

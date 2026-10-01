@@ -5,10 +5,28 @@
 Via requires Crystal 1.21.1 or newer. A normal build also needs the OpenSSL
 development libraries used by Crystal's HTTPS client.
 
+Fedora:
+
+```sh
+sudo dnf install openssl-devel
+```
+
+Debian or Ubuntu:
+
+```sh
+sudo apt install libssl-dev pkg-config
+```
+
+Verify the toolchain:
+
+```sh
+make doctor
+```
+
 ## Build
 
 ```sh
-shards build --release
+make release
 ```
 
 The binary is written to `bin/via`.
@@ -16,7 +34,7 @@ The binary is written to `bin/via`.
 For an HTTP-only binary on a machine without OpenSSL development libraries:
 
 ```sh
-shards build --release -Dwithout_openssl
+make release-http
 ```
 
 ## Create a configuration
