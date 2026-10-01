@@ -63,6 +63,8 @@ docs:
 	$(MKDOCS) build --strict
 	cp web/index.html site/index.html
 	cp web/styles.css site/styles.css
+	mkdir -p site/assets
+	cp docs/assets/favicon.svg docs/assets/site.css docs/assets/via-logo.svg site/assets/
 	cp web/CNAME web/.nojekyll site/
 
 docs-serve: docs build-http

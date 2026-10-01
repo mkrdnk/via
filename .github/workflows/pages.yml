@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -26,6 +26,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
 
       - name: Install Crystal
@@ -37,10 +38,78 @@ jobs:
           python-version: "3.x"
 
       - name: Install documentation tooling
-        run: python -m pip install mkdocs
+        run: python -m pip install mkdocs mike
 
-      - name: Build and verify site through Via
-        run: make pages-smoke
+      - name: Build landing and Via
+        run: |
+          make docs
+          make build-http
+
+      - name: Build versioned documentation
+        id: versioned
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          version=$(awk '$1 == "version:" { print $2; exit }' shard.yml)
+          if [[ -z "$version" ]]; then
+            echo "shard.yml does not contain a version" >&2
+            exit 1
+          fi
+          if [[ -n "${RELEASE_TAG:-}" && "$RELEASE_TAG" != "v$version" ]]; then
+            echo "Release tag $RELEASE_TAG does not match shard.yml version $version" >&2
+            exit 1
+          fi
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git fetch origin gh-pages:gh-pages
+          fi
+
+          mike deploy \
+            --config-file mkdocs.yml \
+            --branch gh-pages \
+            --deploy-prefix docs \
+            --alias-type redirect \
+            --update-aliases \
+            "$version" latest
+          mike set-default \
+            --config-file mkdocs.yml \
+            --branch gh-pages \
+            --deploy-prefix docs \
+            latest
+
+          pages_dir="$RUNNER_TEMP/pages"
+          rm -rf "$pages_dir"
+          git worktree add "$pages_dir" gh-pages
+
+          cp site/index.html site/styles.css site/CNAME site/.nojekyll "$pages_dir/"
+          rm -rf "$pages_dir/assets"
+          cp -a site/assets "$pages_dir/assets"
+
+          git -C "$pages_dir" add \
+            index.html styles.css CNAME .nojekyll assets
+          if ! git -C "$pages_dir" diff --cached --quiet; then
+            git -C "$pages_dir" commit -m "Deploy landing for via $version"
+          fi
+
+          rm -rf site
+          mkdir site
+          cp -a "$pages_dir"/. site/
+          rm -f site/.git
+          git worktree remove --force "$pages_dir"
+          echo "docs_prefix=/docs/latest" >> "$GITHUB_OUTPUT"
+
+      - name: Verify versioned site through Via
+        env:
+          DOCS_PREFIX: ${{ steps.versioned.outputs.docs_prefix }}
+        run: sh scripts/pages-smoke.sh
+
+      - name: Preserve generated documentation versions
+        run: git push origin gh-pages
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

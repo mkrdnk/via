@@ -2,6 +2,7 @@
 set -eu
 
 log_file="${TMPDIR:-/tmp}/via-pages-smoke.log"
+docs_prefix="${DOCS_PREFIX:-/docs}"
 ./bin/via -c .github/pages/via.yaml >"$log_file" 2>&1 &
 via_pid=$!
 
@@ -24,12 +25,12 @@ done
 for path in \
   / \
   /styles.css \
-  /docs/ \
-  /docs/routing/ \
-  /docs/cli/ \
-  /docs/service/ \
-  /docs/assets/favicon.svg \
-  /docs/assets/site.css
+  /assets/favicon.svg \
+  /assets/site.css \
+  "$docs_prefix/" \
+  "$docs_prefix/routing/" \
+  "$docs_prefix/cli/" \
+  "$docs_prefix/service/"
 do
   curl --fail --silent --show-error --output /dev/null \
     "http://127.0.0.1:8080${path}"

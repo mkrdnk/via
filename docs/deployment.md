@@ -16,6 +16,26 @@ release tag. Documentation therefore represents a published version rather
 than an arbitrary commit from `master`. A manual dispatch remains available
 for recovery.
 
+## Versioned documentation
+
+Generated documentation is preserved in the `gh-pages` branch through
+`mike`:
+
+```text
+/docs/0.1.0/
+/docs/0.2.0/
+/docs/latest/  → latest published version
+/docs/         → latest
+```
+
+Publishing a release adds or replaces only that version. Previously generated
+versions remain byte-for-byte available and appear in the documentation
+version selector.
+
+The landing page and shared branding assets remain at the site root. The
+`gh-pages` branch stores generated output; Pages deployment still uses the
+verified Actions artifact assembled from that branch.
+
 The smoke-test configuration is
 `.github/pages/via.yaml`:
 
@@ -67,10 +87,13 @@ DNS and certificate provisioning happen outside the repository. The committed
 1. checkout of the published release tag;
 2. Crystal and MkDocs setup;
 3. static site build;
-4. HTTP-only Via build;
-5. end-to-end requests through Via;
-6. Pages artifact upload;
-7. deployment to the `github-pages` environment.
+4. versioned MkDocs deployment into the local `gh-pages` branch;
+5. landing page composition;
+6. HTTP-only Via build;
+7. end-to-end requests through Via;
+8. persistence of the generated versions to `gh-pages`;
+9. Pages artifact upload;
+10. deployment to the `github-pages` environment.
 
 GitHub Pages itself cannot execute the Via binary. Production bytes are served
 by GitHub's Pages infrastructure; Via provides the canonical local server and
