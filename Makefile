@@ -1,14 +1,12 @@
 CRYSTAL ?= crystal
 SHARDS ?= shards
 MKDOCS ?= mkdocs
-PYTHON ?= python3
 WRK ?= wrk
 
 CONFIG ?= config.yaml
-DOCS_PORT ?= 8000
 URL ?= http://127.0.0.1:8080/
 
-.PHONY: all doctor check-openssl build build-http release release-http run debug test test-http format format-check docs docs-serve check check-http benchmark clean
+.PHONY: all doctor check-openssl build build-http release release-http run debug test test-http format format-check docs docs-serve pages-smoke check check-http benchmark clean
 
 all: build
 
@@ -65,9 +63,13 @@ docs:
 	$(MKDOCS) build --strict
 	cp web/index.html site/index.html
 	cp web/styles.css site/styles.css
+	cp web/CNAME web/.nojekyll site/
 
-docs-serve: docs
-	$(PYTHON) -m http.server $(DOCS_PORT) --directory site
+docs-serve: docs build-http
+	./bin/via -c .github/pages/via.yaml
+
+pages-smoke: docs build-http
+	sh ./scripts/pages-smoke.sh
 
 check: format-check test docs
 

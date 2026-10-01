@@ -32,7 +32,12 @@ make docs-serve
 # http://localhost:8000/docs/
 ```
 
-Override the preview port with `DOCS_PORT`.
+The preview server is Via itself, using `.github/pages/via.yaml`. Run the
+non-interactive deployment smoke test with:
+
+```sh
+make pages-smoke
+```
 
 Override `CONFIG` when running:
 

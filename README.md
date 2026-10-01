@@ -4,6 +4,9 @@
 
 **Via is a tiny HTTP reverse proxy for when you only need `proxy_pass`.**
 
+[Website](https://via.makridenko.com/) ·
+[Documentation](https://via.makridenko.com/docs/)
+
 Via is an early-stage, concurrent HTTP reverse proxy written in Crystal. It
 supports host/path routing, streaming request and response bodies, keep-alive,
 reusable upstream connections, TLS termination, and atomic configuration
@@ -44,7 +47,9 @@ make release-http
 ## Documentation
 
 - [Getting started](docs/getting-started.md)
-- [Configuration and routing](docs/configuration.md)
+- [Configuration](docs/configuration.md)
+- [Routing](docs/routing.md)
+- [CLI](docs/cli.md)
 - [Proxy behavior](docs/proxy-behavior.md)
 - [Error pages and request IDs](docs/errors.md)
 - [Debug mode and hot reload](docs/hot-reload.md)
