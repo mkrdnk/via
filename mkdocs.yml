@@ -30,3 +30,4 @@ nav:
 theme:
   name: readthedocs
   custom_dir: theme
+  hljs_style: github-dark
