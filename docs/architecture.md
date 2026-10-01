@@ -26,16 +26,15 @@ independent and directly testable.
 
 ## Request flow
 
-```text
-HTTP request
-    ↓
-Router
-    ↓
-Route
-    ↓
-Upstream connection pool
-    ↓
-HTTP upstream
+```mermaid
+flowchart TD
+    Request["HTTP request"] --> Router
+    Router --> Route
+    Route --> ProxyTarget["Proxy target"]
+    Route --> StaticTarget["Static target"]
+    ProxyTarget --> Pool["Upstream connection pool"]
+    Pool --> Upstream["HTTP upstream"]
+    StaticTarget --> Filesystem["Validated filesystem root"]
 ```
 
 The router is independent of the HTTP server and client transports. It only
