@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 
+{% block site_name %}
+  <a href="{{ nav.homepage.url | url }}" class="docs-brand" aria-label="via documentation">
+    <img src="{{ 'assets/favicon.svg' | url }}" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+{% endblock %}
+
 {% block extrahead %}
   <link rel="icon" href="{{ 'assets/favicon.svg' | url }}" type="image/svg+xml" />
 {% endblock %}

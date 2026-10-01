@@ -1,9 +1,11 @@
 CRYSTAL ?= crystal
 SHARDS ?= shards
 MKDOCS ?= mkdocs
+PYTHON ?= python3
 WRK ?= wrk
 
 CONFIG ?= config.yaml
+DOCS_PORT ?= 8000
 URL ?= http://127.0.0.1:8080/
 
 .PHONY: all doctor check-openssl build build-http release release-http run debug test test-http format format-check docs docs-serve check check-http benchmark clean
@@ -59,10 +61,13 @@ format-check:
 	$(CRYSTAL) tool format --check
 
 docs:
+	rm -rf site
 	$(MKDOCS) build --strict
+	cp web/index.html site/index.html
+	cp web/styles.css site/styles.css
 
-docs-serve:
-	$(MKDOCS) serve
+docs-serve: docs
+	$(PYTHON) -m http.server $(DOCS_PORT) --directory site
 
 check: format-check test docs
 

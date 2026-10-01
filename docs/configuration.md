@@ -1,4 +1,4 @@
-# Configuration and routing
+# Configuration
 
 Via reads a strict YAML configuration. Unknown fields and invalid values cause
 startup to fail with a configuration error.
@@ -41,31 +41,7 @@ Top-level `proxy_pass` and `routes` are mutually exclusive. Every route must
 have exactly one target: `proxy_pass` or `static`. `host` is optional and
 `path` defaults to `/`.
 
-## Path matching
-
-Route paths use segment-aware prefix matching:
-
-- `/api` matches `/api`;
-- `/api` matches `/api/users`;
-- `/api` does not match `/apix`.
-
-The longest matching path wins. A trailing slash in a configured path is
-normalized away, so `/api/` and `/api` describe the same route.
-
-Via forwards the original request path and query unchanged. Matching `/api`
-does not strip `/api` from the upstream request.
-
-## Host matching
-
-Host matching is exact and case-insensitive. The port in the incoming `Host`
-header is ignored.
-
-For routes with the same path, a matching host-specific route takes precedence
-over a route without `host`. A route without `host` can act as a fallback for
-any hostname.
-
-Configurations containing duplicate normalized host/path pairs are rejected.
-If no route matches a request, Via responds with `404 Not Found`.
+See [Routing](routing.md) for host matching, path matching, and precedence.
 
 ## Configuration directories
 

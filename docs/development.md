@@ -23,6 +23,17 @@ make docs
 make docs-serve
 ```
 
+`make docs` builds the landing page at `site/index.html` and MkDocs under
+`site/docs/`. Preview both from one local origin:
+
+```sh
+make docs-serve
+# http://localhost:8000/
+# http://localhost:8000/docs/
+```
+
+Override the preview port with `DOCS_PORT`.
+
 Override `CONFIG` when running:
 
 ```sh

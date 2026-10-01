@@ -1,5 +1,7 @@
 # Via
 
+![via logo](docs/assets/via-logo.svg)
+
 **Via is a tiny HTTP reverse proxy for when you only need `proxy_pass`.**
 
 Via is an early-stage, concurrent HTTP reverse proxy written in Crystal. It

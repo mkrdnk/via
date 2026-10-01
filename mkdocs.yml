@@ -1,10 +1,19 @@
 site_name: Via
+site_dir: site/docs
+repo_name: GitHub
+repo_url: https://github.com/mkrdnk/via
+
+extra_css:
+  - assets/site.css
 
 nav:
   - Overview: index.md
   - Guide:
       - Getting started: getting-started.md
-      - Configuration and routing: configuration.md
+      - Configuration: configuration.md
+      - Routing: routing.md
+      - CLI: cli.md
+      - Running as a service: service.md
       - TLS: tls.md
       - Static files: static-files.md
   - Operations:
