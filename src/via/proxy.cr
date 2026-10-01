@@ -50,7 +50,7 @@ module Via
       end
 
       @clients[route.upstream.to_s].with do |client|
-        headers = forwarded_headers(request.headers)
+        headers = request_headers(request, route.upstream)
         client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
           response.status = upstream_response.status
           copy_headers(upstream_response.headers, response.headers)
@@ -90,6 +90,41 @@ module Via
 
     private def forwarded_headers(source : HTTP::Headers) : HTTP::Headers
       self.class.forwarded_headers(source)
+    end
+
+    private def request_headers(request : HTTP::Request, upstream : URI) : HTTP::Headers
+      headers = forwarded_headers(request.headers)
+      original_host = request.headers["Host"]?
+
+      headers["Host"] = upstream_authority(upstream)
+      if original_host
+        headers["X-Forwarded-Host"] = original_host
+      else
+        headers.delete("X-Forwarded-Host")
+      end
+      headers["X-Forwarded-Proto"] = "http"
+
+      if address = request.remote_address
+        if address.is_a?(Socket::IPAddress)
+          client_ip = address.address
+          if forwarded_for = headers["X-Forwarded-For"]?.try(&.presence)
+            headers["X-Forwarded-For"] = "#{forwarded_for}, #{client_ip}"
+          else
+            headers["X-Forwarded-For"] = client_ip
+          end
+        end
+      end
+
+      headers
+    end
+
+    private def upstream_authority(upstream : URI) : String
+      hostname = upstream.hostname.not_nil!
+      hostname = "[#{hostname}]" if hostname.includes?(':')
+      port = upstream.port
+      default_port = upstream.scheme == "https" ? 443 : 80
+
+      port && port != default_port ? "#{hostname}:#{port}" : hostname
     end
 
     private def copy_headers(source : HTTP::Headers, destination : HTTP::Headers) : Nil
