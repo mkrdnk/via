@@ -2,15 +2,6 @@ require "set"
 require "uri"
 
 module Via
-  class ConfigurationError < Exception
-  end
-
-  record ListenAddress, host : String, port : Int32
-  record ValidatedConfig,
-    listen : ListenAddress,
-    routes : Array(Route),
-    tls : TlsConfig? = nil
-
   class ConfigValidator
     def initialize(@config : Config)
     end
@@ -142,7 +133,7 @@ module Via
     private def parse_static(value : String | StaticConfig, route_index : Int32) : StaticTarget
       config = value.is_a?(String) ? StaticConfig.new(value) : value
       root = begin
-        File.realpath(config.root)
+        StaticPath.canonical_root(config.root)
       rescue File::Error
         raise ConfigurationError.new(
           "Static root in routes[#{route_index}] is not a readable directory: #{config.root}"
@@ -157,35 +148,32 @@ module Via
 
       fallback = config.fallback
       if fallback
-        validate_static_fallback(root, fallback, route_index)
+        fallback = validate_static_fallback(root, fallback, route_index)
       end
 
       StaticTarget.new(root, fallback)
     end
 
-    private def validate_static_fallback(root : String, fallback : String, route_index : Int32) : Nil
-      if fallback.empty? || Path[fallback].absolute? || fallback.includes?('\\') ||
-         fallback.split('/').includes?("..")
+    private def validate_static_fallback(
+      root : String,
+      fallback : String,
+      route_index : Int32,
+    ) : String
+      normalized = StaticPath.normalize_relative(fallback)
+      unless normalized
         raise ConfigurationError.new(
           "Invalid static fallback in routes[#{route_index}]: #{fallback}"
         )
       end
 
-      path = File.expand_path(fallback, root)
-      real_path = begin
-        File.realpath(path)
-      rescue File::Error
+      resolved = StaticPath.resolve(root, normalized)
+      unless resolved && resolved[1].file? && File::Info.readable?(resolved[0])
         raise ConfigurationError.new(
           "Static fallback in routes[#{route_index}] is not a readable file: #{fallback}"
         )
       end
 
-      unless inside_root?(root, real_path) && File.file?(real_path) &&
-             File::Info.readable?(real_path)
-        raise ConfigurationError.new(
-          "Static fallback in routes[#{route_index}] is not a readable file: #{fallback}"
-        )
-      end
+      normalized
     end
 
     private def reject_duplicate_routes(routes : Array(Route)) : Nil
@@ -202,10 +190,6 @@ module Via
 
     private def valid_hostname?(hostname : String) : Bool
       !hostname.empty? && hostname.each_char.none?(&.whitespace?)
-    end
-
-    private def inside_root?(root : String, path : String) : Bool
-      path == root || path.starts_with?("#{root}#{File::SEPARATOR}")
     end
 
     private def validate_tls_file(path : String, field : String) : Nil

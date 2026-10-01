@@ -22,17 +22,17 @@ module Via
         return
       end
 
-      resolved = resolve(target.root, relative_path)
+      resolved = StaticPath.resolve(target.root, relative_path)
       if resolved && resolved[1].directory?
         unless request.path.ends_with?('/')
           redirect_to_directory(context)
           return
         end
-        resolved = resolve(target.root, File.join(relative_path, "index.html"))
+        resolved = StaticPath.resolve(target.root, File.join(relative_path, "index.html"))
       end
 
       unless resolved && resolved[1].file?
-        resolved = target.fallback.try { |fallback| resolve(target.root, fallback) }
+        resolved = target.fallback.try { |fallback| StaticPath.resolve(target.root, fallback) }
       end
 
       unless resolved && resolved[1].file?
@@ -55,30 +55,7 @@ module Via
                    decoded.byte_slice(route_path.bytesize..).lchop('/')
                  end
 
-      segments = relative.split('/')
-      return if segments.includes?("..")
-
-      segments.reject!(&.in?("", "."))
-      segments.join(File::SEPARATOR)
-    end
-
-    private def resolve(root : String, relative_path : String) : Tuple(String, File::Info)?
-      expanded = File.expand_path(relative_path, root)
-      return unless inside_root?(root, expanded)
-      return unless File.info?(expanded)
-
-      real_path = File.realpath(expanded)
-      return unless inside_root?(root, real_path)
-      info = File.info?(real_path)
-      return unless info
-
-      {real_path, info}
-    rescue File::Error
-      nil
-    end
-
-    private def inside_root?(root : String, path : String) : Bool
-      path == root || path.starts_with?("#{root}#{File::SEPARATOR}")
+      StaticPath.normalize_relative(relative, allow_empty: true)
     end
 
     private def redirect_to_directory(context : HTTP::Server::Context) : Nil

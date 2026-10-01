@@ -1,11 +1,4 @@
 module Via
-  record StaticTarget, root : String, fallback : String?
-  record Route,
-    host : String?,
-    path : String,
-    upstream : URI?,
-    static_target : StaticTarget? = nil
-
   # Selects a route without depending on HTTP server or client types.
   #
   # Paths use segment-aware prefix matching. The longest matching path wins;

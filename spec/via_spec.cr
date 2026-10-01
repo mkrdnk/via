@@ -1,21 +1,5 @@
 require "./spec_helper"
 
-private def with_server(server : HTTP::Server, &)
-  address = server.bind_unused_port
-  spawn server.listen
-  yield address
-ensure
-  server.close
-end
-
-private def with_temp_directory(&)
-  path = File.tempname("via-spec", "")
-  Dir.mkdir(path)
-  yield path
-ensure
-  FileUtils.rm_rf(path) if path && File.exists?(path)
-end
-
 describe Via::Config do
   it "loads and validates the minimal configuration" do
     config = Via::Config.from_yaml <<-YAML
@@ -717,7 +701,7 @@ describe Via::Proxy do
       "X-End-To-End" => "kept",
     }
 
-    headers = Via::Proxy.forwarded_headers(source)
+    headers = Via::ForwardedHeaders.filter(source)
     headers["X-End-To-End"].should eq("kept")
     headers.has_key?("Connection").should be_false
     headers.has_key?("Keep-Alive").should be_false
