@@ -106,3 +106,20 @@ Across a directory, `listen` must be declared exactly once and top-level
 The normal validation rules are applied after merging.
 
 See [Debug mode and hot reload](hot-reload.md) for reload behavior.
+
+## TLS
+
+Add a certificate and private key to terminate TLS:
+
+```yaml
+listen: ":443"
+
+tls:
+  cert: /etc/via/cert.pem
+  key: /etc/via/key.pem
+
+proxy_pass: http://localhost:8000
+```
+
+Both files must exist and be readable. See [TLS](tls.md) for runtime and reload
+behavior.

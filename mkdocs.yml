@@ -7,6 +7,7 @@ nav:
   - Proxy behavior: proxy-behavior.md
   - Error pages and request IDs: errors.md
   - Debug mode and hot reload: hot-reload.md
+  - TLS: tls.md
   - Architecture: architecture.md
   - Development and benchmarking: development.md
 

@@ -2,22 +2,38 @@
 
 ## Checks
 
-Run the test suite:
+The Makefile is the primary development entry point. Run the complete check:
 
 ```sh
-crystal spec
+make check
 ```
 
-Check formatting:
+Useful targets:
 
 ```sh
-crystal tool format --check
+make build          # development binary
+make release        # optimized binary
+make run            # run with CONFIG=config.yaml
+make debug          # run --debug with CONFIG=config.yaml
+make test
+make format
+make format-check
+make docs
+make docs-serve
 ```
 
-Build an optimized binary:
+Override `CONFIG` when running:
 
 ```sh
-shards build --release
+make debug CONFIG=/etc/via/config/
+```
+
+An HTTP-only build does not link OpenSSL:
+
+```sh
+make release-http
+make test-http
+make check-http
 ```
 
 ## Baseline benchmark
@@ -26,7 +42,7 @@ Start an upstream on port 3000, run Via with the minimal configuration, and use
 a fixed payload and concurrency:
 
 ```sh
-wrk -t4 -c128 -d30s --latency http://127.0.0.1:8080/
+make benchmark URL=http://127.0.0.1:8080/
 ```
 
 Record at least:

@@ -24,6 +24,11 @@ upstream connections are closed only after all active requests finish.
 The listener cannot currently be rebound during hot reload. Changing `listen`
 is treated as a configuration error and requires restarting Via.
 
+TLS certificate and key paths may change during reload. Via loads the complete
+replacement context before swapping runtime state, and new TLS connections use
+the new certificate. TLS cannot be enabled or disabled without restarting the
+listener.
+
 ## Production behavior
 
 Without `--debug`, an invalid reload is written to the error log and Via keeps
@@ -62,5 +67,6 @@ edit → save → reload → works
 Debug mode also logs request method, request target, selected upstream,
 upstream status, and request ID.
 
-An initial file that cannot be parsed as YAML, or does not contain a valid
-`listen`, cannot start a listener and therefore still exits with an error.
+An initial file that cannot be parsed as YAML, does not contain a valid
+`listen`, or configures TLS without a usable certificate cannot start a
+listener and therefore still exits with an error.

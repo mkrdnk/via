@@ -38,6 +38,12 @@ The previous generation is retired rather than closed immediately. It tracks
 active requests and closes its idle upstream clients once its last request
 finishes. This keeps reload atomic without interrupting in-flight streams.
 
+For TLS listeners, each accepted TCP connection snapshots the current
+`OpenSSL::SSL::Context::Server` before its handshake. Configuration reload
+creates and validates a replacement context before publishing it with the new
+proxy generation. Existing TLS connections continue normally; new connections
+receive the replacement certificate.
+
 ## Streaming and backpressure
 
 Via passes the incoming request body directly to the upstream HTTP client. It

@@ -4,12 +4,13 @@
 
 Via is an early-stage, concurrent HTTP reverse proxy written in Crystal. It
 supports host/path routing, streaming request and response bodies, keep-alive,
-reusable upstream connections, and atomic configuration reloads.
+reusable upstream connections, TLS termination, and atomic configuration
+reloads.
 
 ## Quick start
 
 ```sh
-shards build --release
+make release
 ```
 
 ```yaml
@@ -28,12 +29,12 @@ bin/via -c via.yaml
 - [Proxy behavior](docs/proxy-behavior.md)
 - [Error pages and request IDs](docs/errors.md)
 - [Debug mode and hot reload](docs/hot-reload.md)
+- [TLS](docs/tls.md)
 - [Architecture](docs/architecture.md)
 - [Development and benchmarking](docs/development.md)
 
-Via is under active development. TLS termination, static files, WebSocket
-proxying, configurable headers, and upstream timeouts are planned but not yet
-available.
+Via is under active development. Static files, WebSocket proxying,
+configurable headers, and upstream timeouts are planned but not yet available.
 
 ## License
 
