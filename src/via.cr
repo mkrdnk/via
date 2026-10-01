@@ -26,5 +26,11 @@ require "./via/server"
 require "./via/cli"
 
 module Via
-  VERSION = "0.1.0"
+  VERSION = {{
+              read_file("#{__DIR__}/../shard.yml")
+                .lines
+                .find(&.starts_with?("version:"))
+                .split(":")[1]
+                .strip
+            }}
 end
