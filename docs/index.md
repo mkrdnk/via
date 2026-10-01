@@ -11,7 +11,7 @@ development milestone provides:
 - downstream and upstream keep-alive;
 - reusable upstream connections;
 - strict YAML configuration and validation;
-- built-in `404 Not Found` and `502 Bad Gateway` responses.
+- built-in gateway error pages with request IDs.
 
 Via deliberately stays focused. It does not currently provide caching,
 FastCGI, WAF functionality, scripting, plugins, complex rewrite rules, or
@@ -25,4 +25,5 @@ headers, and upstream timeouts remain on the roadmap.
 
 Start with [Getting started](getting-started.md), then see
 [Configuration and routing](configuration.md) for route matching behavior and
-[Proxy behavior](proxy-behavior.md) for forwarding semantics.
+[Proxy behavior](proxy-behavior.md) for forwarding semantics. See
+[Error pages and request IDs](errors.md) for failure behavior.
