@@ -6,7 +6,10 @@ module Via
   end
 
   record ListenAddress, host : String, port : Int32
-  record ValidatedConfig, listen : ListenAddress, routes : Array(Route)
+  record ValidatedConfig,
+    listen : ListenAddress,
+    routes : Array(Route),
+    tls : TlsConfig? = nil
 
   class ConfigValidator
     def initialize(@config : Config)
@@ -16,13 +19,22 @@ module Via
       listen = validate_listen
       routes = build_routes
       reject_duplicate_routes(routes)
-      ValidatedConfig.new(listen, routes)
+      tls = validate_tls
+      ValidatedConfig.new(listen, routes, tls)
     end
 
     def validate_listen : ListenAddress
       value = @config.listen ||
               raise ConfigurationError.new("Configuration requires listen")
       parse_listen(value)
+    end
+
+    def validate_tls : TlsConfig?
+      return unless tls = @config.tls
+
+      validate_tls_file(tls.cert, "tls.cert")
+      validate_tls_file(tls.key, "tls.key")
+      tls
     end
 
     private def build_routes : Array(Route)
@@ -127,6 +139,16 @@ module Via
 
     private def valid_hostname?(hostname : String) : Bool
       !hostname.empty? && hostname.each_char.none?(&.whitespace?)
+    end
+
+    private def validate_tls_file(path : String, field : String) : Nil
+      if path.empty?
+        raise ConfigurationError.new("#{field} must not be empty")
+      end
+      info = File.info?(path)
+      unless info && info.file? && File::Info.readable?(path)
+        raise ConfigurationError.new("#{field} is not a readable file: #{path}")
+      end
     end
   end
 end

@@ -2,8 +2,8 @@ module Via
   record ConfigurationDiagnostic, source : String, message : String
 
   private class ProxyGeneration
-    def initialize(routes : Array(Route), log : IO, debug : Bool)
-      @proxy = Proxy.new(routes, log, debug)
+    def initialize(routes : Array(Route), log : IO, debug : Bool, scheme : String)
+      @proxy = Proxy.new(routes, log, debug, scheme)
       @mutex = Mutex.new
       @active_requests = 0
       @retired = false
@@ -48,23 +48,43 @@ module Via
   class RuntimeState
     @generation : ProxyGeneration?
     @diagnostic : ConfigurationDiagnostic?
+    {% unless flag?(:without_openssl) %}
+      @tls_context : OpenSSL::SSL::Context::Server?
+    {% end %}
 
     def initialize(@log : IO = STDERR, @debug : Bool = false)
       @mutex = Mutex.new
       @generation = nil
       @diagnostic = nil
+      {% unless flag?(:without_openssl) %}
+        @tls_context = nil
+      {% end %}
     end
 
     def apply(config : ValidatedConfig) : Nil
-      replacement = ProxyGeneration.new(config.routes, @log, @debug)
+      tls_context = Tls.build(config.tls)
+      scheme = config.tls ? "https" : "http"
+      replacement = ProxyGeneration.new(config.routes, @log, @debug, scheme)
       previous = @mutex.synchronize do
         old = @generation
         @generation = replacement
         @diagnostic = nil
+        {% unless flag?(:without_openssl) %}
+          @tls_context = tls_context
+        {% end %}
         old
       end
       previous.try(&.retire)
     end
+
+    {% unless flag?(:without_openssl) %}
+      def tls_context : OpenSSL::SSL::Context::Server
+        @mutex.synchronize do
+          @tls_context ||
+            raise ConfigurationError.new("TLS context is not available")
+        end
+      end
+    {% end %}
 
     def reject(source : String, error : Exception) : Nil
       @log.puts "configuration_error source=#{source.inspect} message=#{error.message.inspect}"
@@ -111,6 +131,9 @@ module Via
         old = @generation
         @generation = nil
         @diagnostic = nil
+        {% unless flag?(:without_openssl) %}
+          @tls_context = nil
+        {% end %}
         old
       end
       previous.try(&.retire)

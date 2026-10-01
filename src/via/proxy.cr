@@ -15,6 +15,7 @@ module Via
       routes : Enumerable(Route),
       @log : IO = STDERR,
       @debug : Bool = false,
+      @scheme : String = "http",
     )
       route_list = routes.to_a
       @router = Router.new(route_list)
@@ -137,7 +138,7 @@ module Via
       else
         headers.delete("X-Forwarded-Host")
       end
-      headers["X-Forwarded-Proto"] = "http"
+      headers["X-Forwarded-Proto"] = @scheme
 
       if address = request.remote_address
         if address.is_a?(Socket::IPAddress)

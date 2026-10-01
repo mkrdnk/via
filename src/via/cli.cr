@@ -60,20 +60,26 @@ module Via
       validator = ConfigValidator.new(model)
       listen = validator.validate_listen
       state = RuntimeState.new(error, debug)
+      tls_enabled = false
+      tls = nil
 
       begin
-        state.apply(validator.validate)
+        validated = validator.validate
+        state.apply(validated)
+        tls = validated.tls
+        tls_enabled = !tls.nil?
       rescue ex : ConfigurationError
-        raise ex unless debug
+        raise ex unless debug && model.tls.nil?
         state.reject(path, ex)
       end
 
-      server = Server.new(listen, state)
+      server = Server.new(listen, state, tls_enabled)
       address = server.bind
-      output.puts "Via #{VERSION} listening on http://#{address}"
+      scheme = tls_enabled ? "https" : "http"
+      output.puts "Via #{VERSION} listening on #{scheme}://#{address}"
       output.puts "Debug mode enabled" if debug
 
-      reloader = ConfigReloader.new(path, listen, state, output)
+      reloader = ConfigReloader.new(path, listen, tls, state, output)
       reloader.start
 
       Signal::INT.trap { server.close }

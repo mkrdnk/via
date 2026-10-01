@@ -147,6 +147,49 @@ describe Via::Config do
       end
     end
   end
+
+  it "validates manual TLS certificate files" do
+    with_temp_directory do |directory|
+      cert = File.join(directory, "cert.pem")
+      key = File.join(directory, "key.pem")
+      File.write(cert, "test certificate")
+      File.write(key, "test key")
+
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":443"
+        tls:
+          cert: #{cert}
+          key: #{key}
+        proxy_pass: http://localhost:3000
+        YAML
+
+      validated = config.validate
+      validated.tls.not_nil!.cert.should eq(cert)
+      validated.tls.not_nil!.key.should eq(key)
+    end
+  end
+
+  it "rejects missing TLS certificate files" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":443"
+      tls:
+        cert: /missing/cert.pem
+        key: /missing/key.pem
+      proxy_pass: http://localhost:3000
+      YAML
+
+    expect_raises(Via::ConfigurationError, "tls.cert is not a readable file") do
+      config.validate
+    end
+  end
+
+  {% if flag?(:without_openssl) %}
+    it "rejects TLS at runtime in an HTTP-only build" do
+      expect_raises(Via::ConfigurationError, "built without OpenSSL") do
+        Via::Tls.build(Via::TlsConfig.new("cert.pem", "key.pem"))
+      end
+    end
+  {% end %}
 end
 
 describe Via::Router do
@@ -252,6 +295,36 @@ describe Via::ConfigWatcher do
       end
     end
   end
+
+  it "detects changes to additional certificate files" do
+    with_temp_directory do |directory|
+      config = File.join(directory, "via.yaml")
+      cert = File.join(directory, "cert.pem")
+      File.write(config, "listen: \":443\"\n")
+      File.write(cert, "certificate one")
+      changes = Channel(Nil).new(1)
+      watcher = Via::ConfigWatcher.new(
+        config,
+        10.milliseconds,
+        20.milliseconds,
+        -> { [cert] }
+      )
+      watcher.start { changes.send(nil) }
+
+      begin
+        sleep 20.milliseconds
+        File.write(cert, "certificate two")
+
+        select
+        when changes.receive
+        when timeout(1.second)
+          fail "configuration watcher did not detect a certificate change"
+        end
+      ensure
+        watcher.stop
+      end
+    end
+  end
 end
 
 describe Via::RuntimeState do
@@ -329,6 +402,7 @@ describe Via::RuntimeState do
           reloader = Via::ConfigReloader.new(
             path,
             initial.listen,
+            nil,
             state,
             IO::Memory.new,
             poll_interval: 10.milliseconds,
@@ -540,6 +614,27 @@ describe Via::Proxy do
         })
       ensure
         proxy.close
+      end
+    end
+  end
+
+  it "marks requests accepted by a TLS listener as HTTPS" do
+    forwarded_proto = Channel(String).new(1)
+    upstream = HTTP::Server.new do |context|
+      forwarded_proto.send(context.request.headers["X-Forwarded-Proto"])
+      context.response << "ok"
+    end
+
+    with_server(upstream) do |upstream_address|
+      route = Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))
+      handler = Via::Proxy.new([route], IO::Memory.new, false, "https")
+      proxy = HTTP::Server.new { |context| handler.call(context) }
+
+      with_server(proxy) do |proxy_address|
+        HTTP::Client.get("http://#{proxy_address}/")
+        forwarded_proto.receive.should eq("https")
+      ensure
+        handler.close
       end
     end
   end

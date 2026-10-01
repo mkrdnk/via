@@ -1,4 +1,15 @@
 module Via
+  class TlsConfig
+    include YAML::Serializable
+    include YAML::Serializable::Strict
+
+    getter cert : String
+    getter key : String
+
+    def initialize(@cert : String, @key : String)
+    end
+  end
+
   class RouteConfig
     include YAML::Serializable
     include YAML::Serializable::Strict
@@ -20,11 +31,13 @@ module Via
     getter proxy_pass : String?
 
     getter routes : Array(RouteConfig)?
+    getter tls : TlsConfig?
 
     def initialize(
       @listen : String? = nil,
       @proxy_pass : String? = nil,
       @routes : Array(RouteConfig)? = nil,
+      @tls : TlsConfig? = nil,
     )
     end
 

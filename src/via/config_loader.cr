@@ -25,6 +25,7 @@ module Via
       listens = fragments.compact_map(&.listen)
       proxy_passes = fragments.compact_map(&.proxy_pass)
       routes = fragments.flat_map { |fragment| fragment.routes || [] of RouteConfig }
+      tls_configs = fragments.compact_map(&.tls)
 
       if listens.size > 1
         raise ConfigurationError.new(
@@ -38,10 +39,17 @@ module Via
         )
       end
 
+      if tls_configs.size > 1
+        raise ConfigurationError.new(
+          "Configuration directory must declare tls at most once, found #{tls_configs.size}"
+        )
+      end
+
       Config.new(
         listen: listens.first?,
         proxy_pass: proxy_passes.first?,
-        routes: routes.empty? ? nil : routes
+        routes: routes.empty? ? nil : routes,
+        tls: tls_configs.first?
       )
     end
 

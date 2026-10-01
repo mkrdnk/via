@@ -9,6 +9,7 @@ module Via
       @path : String,
       @poll_interval : Time::Span = DEFAULT_POLL_INTERVAL,
       @debounce : Time::Span = DEFAULT_DEBOUNCE,
+      @additional_paths : (-> Array(String))? = nil,
     )
       @stopped = Atomic(Bool).new(false)
     end
@@ -50,14 +51,11 @@ module Via
     end
 
     private def fingerprint : UInt64
-      paths = if File.directory?(@path)
-                Dir.children(@path)
-                  .select { |name| ConfigLoader::CONFIG_EXTENSIONS.includes?(File.extname(name).downcase) }
-                  .sort!
-                  .map { |name| File.join(@path, name) }
-              else
-                [@path]
-              end
+      paths = watched_config_paths
+      if additional_paths = @additional_paths
+        paths.concat(additional_paths.call)
+      end
+      paths = paths.uniq!.sort!
 
       paths.compact_map do |path|
         if info = File.info?(path)
@@ -66,6 +64,16 @@ module Via
       end.hash
     rescue File::Error
       {@path, "unavailable"}.hash
+    end
+
+    private def watched_config_paths : Array(String)
+      if File.directory?(@path)
+        Dir.children(@path)
+          .select { |name| ConfigLoader::CONFIG_EXTENSIONS.includes?(File.extname(name).downcase) }
+          .map { |name| File.join(@path, name) }
+      else
+        [@path]
+      end
     end
   end
 end
