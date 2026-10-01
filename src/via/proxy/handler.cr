@@ -2,8 +2,7 @@ module Via::Proxy
   class Handler
     def initialize(
       routes : Enumerable(Routing::Route),
-      @log : IO = STDERR,
-      @debug : Bool = false,
+      @logger : Logging::Logger,
       @scheme : String = "http",
     )
       route_list = routes.to_a
@@ -24,11 +23,32 @@ module Via::Proxy
       request = context.request
       response = context.response
       downstream_started = false
+      response_bytes = 0_i64
+      target = "none"
+      route_path = nil.as(String?)
+      upstream_name = nil.as(String?)
+      failure = nil.as(String?)
+      started_at = Time.instant
       request_id = Via::HTTP::RequestId.generate
       response.headers["X-Request-ID"] = request_id
+      @logger.debug(
+        "request.started",
+        request_id: request_id,
+        client: client_address(request),
+        method: request.method,
+        host: request.headers["Host"]?,
+        path: request.path
+      )
 
       unless Via::HTTP::ForwardedHeaders.valid_host?(request)
-        log_error(request_id, :bad_request, request)
+        failure = "invalid_host"
+        @logger.warn(
+          "request.rejected",
+          request_id: request_id,
+          reason: failure,
+          method: request.method,
+          path: request.path
+        )
         Via::HTTP::ErrorPages.render(
           response,
           ::HTTP::Status::BAD_REQUEST,
@@ -41,7 +61,13 @@ module Via::Proxy
       route = @router.match(request.headers["Host"]?, request.path)
 
       unless route
-        log_error(request_id, :not_found, request)
+        failure = "route_not_found"
+        @logger.warn(
+          "routing.miss",
+          request_id: request_id,
+          host: request.headers["Host"]?,
+          path: request.path
+        )
         Via::HTTP::ErrorPages.render(
           response,
           ::HTTP::Status::NOT_FOUND,
@@ -51,34 +77,43 @@ module Via::Proxy
         return
       end
 
+      route_path = route.path
       if static_target = route.static_target
-        if @debug
-          @log.puts(
-            "request_id=#{request_id} method=#{request.method.inspect} " \
-            "path=#{request.resource.inspect} static_root=#{static_target.root.inspect}"
-          )
-        end
+        target = "static"
+        @logger.debug(
+          "routing.selected",
+          request_id: request_id,
+          target: target,
+          route_host: route.host,
+          route_path: route.path,
+          static_root: static_target.root
+        )
         Static::Files.call(context, route.path, static_target, request_id)
         return
       end
 
+      target = "proxy"
       upstream = route.upstream.not_nil!
-      if @debug
-        @log.puts(
-          "request_id=#{request_id} method=#{request.method.inspect} " \
-          "path=#{request.resource.inspect} upstream=#{upstream}"
-        )
-      end
+      upstream_name = upstream.to_s
+      @logger.debug(
+        "routing.selected",
+        request_id: request_id,
+        target: target,
+        route_host: route.host,
+        route_path: route.path,
+        upstream: upstream_name
+      )
 
       @clients[upstream.to_s].with do |client|
         headers = Via::HTTP::ForwardedHeaders.request(request, upstream, request_id, @scheme)
         client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
           response.status = upstream_response.status
-          if @debug
-            @log.puts(
-              "request_id=#{request_id} upstream_status=#{upstream_response.status_code}"
-            )
-          end
+          @logger.debug(
+            "upstream.response",
+            request_id: request_id,
+            upstream: upstream_name,
+            status: upstream_response.status_code
+          )
           Via::HTTP::ForwardedHeaders.copy_response(upstream_response.headers, response.headers)
           response.headers["X-Request-ID"] = request_id
 
@@ -88,8 +123,9 @@ module Via::Proxy
 
             if count > 0
               downstream_started = true
+              response_bytes += count
               response.write(buffer[0, count])
-              IO.copy(body, response)
+              response_bytes += IO.copy(body, response)
             end
           end
         end
@@ -97,9 +133,21 @@ module Via::Proxy
     rescue ex : IO::Error | Socket::Error
       request_id ||= Via::HTTP::RequestId.generate
       if downstream_started
-        @log.puts "request_id=#{request_id} error=proxy_stream message=#{ex.message.inspect}"
+        failure = "stream_failed"
+        @logger.error(
+          "stream.failed",
+          request_id: request_id,
+          upstream: upstream_name,
+          message: ex.message
+        )
       else
-        @log.puts "request_id=#{request_id} error=bad_gateway message=#{ex.message.inspect}"
+        failure = "upstream_failed"
+        @logger.error(
+          "upstream.failed",
+          request_id: request_id,
+          upstream: upstream_name,
+          message: ex.message
+        )
         Via::HTTP::ErrorPages.render(
           context.response,
           ::HTTP::Status::BAD_GATEWAY,
@@ -107,13 +155,35 @@ module Via::Proxy
           head: context.request.method == "HEAD"
         )
       end
+    ensure
+      if request_id
+        response_bytes = context.response.content_length || response_bytes
+        @logger.info(
+          "request.completed",
+          request_id: request_id,
+          client: client_address(context.request),
+          method: context.request.method,
+          host: context.request.headers["Host"]?,
+          path: context.request.path,
+          target: target,
+          route_path: route_path,
+          upstream: upstream_name,
+          status: context.response.status_code,
+          request_bytes: context.request.content_length,
+          response_bytes: response_bytes,
+          duration_ms: (Time.instant - started_at.not_nil!).total_milliseconds.round(3),
+          failure: failure
+        )
+      end
     end
 
-    private def log_error(request_id : String, error : Symbol, request : ::HTTP::Request) : Nil
-      @log.puts(
-        "request_id=#{request_id} error=#{error} " \
-        "method=#{request.method.inspect} path=#{request.resource.inspect}"
-      )
+    private def client_address(request : ::HTTP::Request) : String?
+      case address = request.remote_address
+      when Socket::IPAddress
+        address.address
+      when Socket::UNIXAddress
+        address.path
+      end
     end
   end
 end

@@ -7,7 +7,6 @@ module Via::Configuration
       @listen : ListenAddress,
       tls : TLS?,
       @state : Runtime::State,
-      @log : IO = STDOUT,
       poll_interval : Time::Span = Watcher::DEFAULT_POLL_INTERVAL,
       debounce : Time::Span = Watcher::DEFAULT_DEBOUNCE,
     )
@@ -41,8 +40,7 @@ module Via::Configuration
         raise Error.new("TLS cannot be enabled or disabled during hot reload")
       end
 
-      @state.apply(config)
-      @log.puts "Configuration reloaded"
+      @state.apply(config, source: @path, reloaded: true)
       true
     rescue ex : Error
       @state.reject(@path, ex)

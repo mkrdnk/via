@@ -66,7 +66,7 @@ module Via
 
       begin
         validated = validator.validate
-        state.apply(validated)
+        state.apply(validated, source: path)
         tls = validated.tls
         tls_enabled = !tls.nil?
       rescue ex : Configuration::Error
@@ -84,7 +84,7 @@ module Via
         debug: debug
       )
 
-      reloader = Configuration::Reloader.new(path, listen, tls, state, output)
+      reloader = Configuration::Reloader.new(path, listen, tls, state)
       reloader.start
 
       Signal::INT.trap { server.close }

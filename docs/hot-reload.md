@@ -3,8 +3,8 @@
 Via watches its configuration automatically:
 
 ```sh
-bin/via -c via.yaml
-bin/via -c /etc/via/config/
+via -c via.yaml
+via -c /etc/via/config/
 ```
 
 File changes are debounced before Via reloads the complete configuration.
@@ -45,7 +45,7 @@ An invalid initial configuration still prevents production startup.
 Start development mode with:
 
 ```sh
-bin/via --debug -c via.yaml
+via --debug -c via.yaml
 ```
 
 If validation fails after Via can determine a valid `listen` address, Via

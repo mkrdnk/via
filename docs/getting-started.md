@@ -49,7 +49,7 @@ proxy_pass: http://localhost:3000
 ## Run Via
 
 ```sh
-bin/via -c via.yaml
+via -c via.yaml
 ```
 
 Requests to `http://localhost:8080` are now proxied to
@@ -58,9 +58,9 @@ Requests to `http://localhost:8080` are now proxied to
 The CLI also exposes:
 
 ```sh
-bin/via --debug -c via.yaml
-bin/via --help
-bin/via --version
+via --debug -c via.yaml
+via --help
+via --version
 ```
 
 Continue with [Configuration and routing](configuration.md) to configure

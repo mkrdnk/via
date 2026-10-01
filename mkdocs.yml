@@ -19,6 +19,7 @@ nav:
       - Static files: static-files.md
   - Operations:
       - Debug mode and hot reload: hot-reload.md
+      - Logging: logging.md
       - Error pages and request IDs: errors.md
       - Releases: releases.md
       - GitHub Pages deployment: deployment.md

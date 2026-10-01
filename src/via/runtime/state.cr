@@ -8,8 +8,9 @@ module Via::Runtime
       @tls_context : OpenSSL::SSL::Context::Server?
     {% end %}
 
-    def initialize(@log : IO = STDERR, @debug : Bool = false)
+    def initialize(log : IO = STDERR, @debug : Bool = false)
       @mutex = Mutex.new
+      @logger = Logging::Logger.new(log, @debug)
       @generation = nil
       @diagnostic = nil
       {% unless flag?(:without_openssl) %}
@@ -17,10 +18,15 @@ module Via::Runtime
       {% end %}
     end
 
-    def apply(config : Configuration::Validated) : Nil
+    def apply(
+      config : Configuration::Validated,
+      *,
+      source : String? = nil,
+      reloaded : Bool = false,
+    ) : Nil
       tls_context = TLS::ContextBuilder.build(config.tls)
       scheme = config.tls ? "https" : "http"
-      replacement = Generation.new(config.routes, @log, @debug, scheme)
+      replacement = Generation.new(config.routes, @logger, scheme)
       previous = @mutex.synchronize do
         old = @generation
         @generation = replacement
@@ -31,6 +37,12 @@ module Via::Runtime
         old
       end
       previous.try(&.retire)
+      @logger.info(
+        reloaded ? "config.reloaded" : "config.applied",
+        source: source,
+        routes: config.routes.size,
+        tls: !config.tls.nil?
+      )
     end
 
     {% unless flag?(:without_openssl) %}
@@ -43,12 +55,20 @@ module Via::Runtime
     {% end %}
 
     def reject(source : String, error : Exception) : Nil
-      @log.puts "configuration_error source=#{source.inspect} message=#{error.message.inspect}"
-      return unless @debug
-
-      @mutex.synchronize do
-        @diagnostic = Diagnostic.new(source, error.message || error.class.name)
+      keeping_previous = @mutex.synchronize do
+        previous = !@generation.nil?
+        if @debug
+          @diagnostic = Diagnostic.new(source, error.message || error.class.name)
+        end
+        previous
       end
+      @logger.error(
+        "config.rejected",
+        source: source,
+        message: error.message,
+        keeping_previous: keeping_previous,
+        diagnostic: @debug
+      )
     end
 
     def call(context : ::HTTP::Server::Context) : Nil

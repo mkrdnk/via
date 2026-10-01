@@ -451,7 +451,6 @@ describe Via::Runtime::State do
             initial.listen,
             nil,
             state,
-            IO::Memory.new,
             poll_interval: 10.milliseconds,
             debounce: 20.milliseconds
           )
@@ -822,7 +821,8 @@ describe Via::Proxy::Handler do
 
     with_server(upstream) do |upstream_address|
       route = Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))
-      handler = Via::Proxy::Handler.new([route], IO::Memory.new, false, "https")
+      logger = Via::Logging::Logger.new(IO::Memory.new)
+      handler = Via::Proxy::Handler.new([route], logger, "https")
       proxy = HTTP::Server.new { |context| handler.call(context) }
 
       with_server(proxy) do |proxy_address|
@@ -1298,8 +1298,8 @@ describe Via::Proxy::Handler do
       request_id = response.headers["X-Request-ID"]
       request_id.should match(/\A[0-9a-f]{32}\z/)
       response.body.should contain("Request ID: #{request_id}")
-      log.to_s.should contain("request_id=#{request_id}")
-      log.to_s.should contain("error=bad_gateway")
+      log.to_s.should contain(%(request_id="#{request_id}"))
+      log.to_s.should contain("event=upstream.failed")
     ensure
       proxy.close
     end
