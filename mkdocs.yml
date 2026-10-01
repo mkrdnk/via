@@ -6,6 +6,7 @@ nav:
   - Configuration and routing: configuration.md
   - Proxy behavior: proxy-behavior.md
   - Error pages and request IDs: errors.md
+  - Debug mode and hot reload: hot-reload.md
   - Architecture: architecture.md
   - Development and benchmarking: development.md
 

@@ -65,3 +65,44 @@ any hostname.
 
 Configurations containing duplicate normalized host/path pairs are rejected.
 If no route matches a request, Via responds with `404 Not Found`.
+
+## Configuration directories
+
+`-c` accepts either one YAML file or a directory containing `.yaml` and `.yml`
+fragments. Files are merged in lexical filename order:
+
+```text
+/etc/via/config/
+├── 00-server.yaml
+├── 10-api.yaml
+└── 20-app.yaml
+```
+
+`00-server.yaml`:
+
+```yaml
+listen: ":8080"
+```
+
+`10-api.yaml`:
+
+```yaml
+routes:
+  - host: api.example.com
+    path: /
+    proxy_pass: http://localhost:8000
+```
+
+`20-app.yaml`:
+
+```yaml
+routes:
+  - path: /
+    proxy_pass: http://localhost:3000
+```
+
+Across a directory, `listen` must be declared exactly once and top-level
+`proxy_pass` at most once. Route arrays from all fragments are concatenated.
+The normal validation rules are applied after merging.
+
+See [Debug mode and hot reload](hot-reload.md) for reload behavior.

@@ -40,6 +40,7 @@ Requests to `http://localhost:8080` are now proxied to
 The CLI also exposes:
 
 ```sh
+bin/via --debug -c via.yaml
 bin/via --help
 bin/via --version
 ```

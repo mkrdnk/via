@@ -28,6 +28,16 @@ Each active upstream request owns its `HTTP::Client`; clients are never shared
 concurrently between fibers. Successfully completed clients return to a
 bounded idle pool and can reuse their keep-alive connections.
 
+## Configuration generations
+
+A validated configuration creates an immutable proxy generation containing its
+router and upstream connection pools. Hot reload builds the replacement before
+acquiring the runtime state lock, then swaps one generation reference.
+
+The previous generation is retired rather than closed immediately. It tracks
+active requests and closes its idle upstream clients once its last request
+finishes. This keeps reload atomic without interrupting in-flight streams.
+
 ## Streaming and backpressure
 
 Via passes the incoming request body directly to the upstream HTTP client. It
