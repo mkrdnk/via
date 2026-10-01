@@ -24,4 +24,5 @@ TLS termination, hot reload, static files, WebSocket proxying, configurable
 headers, and upstream timeouts remain on the roadmap.
 
 Start with [Getting started](getting-started.md), then see
-[Configuration and routing](configuration.md) for route matching behavior.
+[Configuration and routing](configuration.md) for route matching behavior and
+[Proxy behavior](proxy-behavior.md) for forwarding semantics.

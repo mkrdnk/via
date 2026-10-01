@@ -25,6 +25,7 @@ bin/via -c via.yaml
 
 - [Getting started](docs/getting-started.md)
 - [Configuration and routing](docs/configuration.md)
+- [Proxy behavior](docs/proxy-behavior.md)
 - [Architecture](docs/architecture.md)
 - [Development and benchmarking](docs/development.md)
 

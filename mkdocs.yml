@@ -4,6 +4,7 @@ nav:
   - Overview: index.md
   - Getting started: getting-started.md
   - Configuration and routing: configuration.md
+  - Proxy behavior: proxy-behavior.md
   - Architecture: architecture.md
   - Development and benchmarking: development.md
 
