@@ -1,7 +1,11 @@
 site_name: Via
 
 nav:
-  - index: index.md
+  - Overview: index.md
+  - Getting started: getting-started.md
+  - Configuration and routing: configuration.md
+  - Architecture: architecture.md
+  - Development and benchmarking: development.md
 
 theme:
   name: readthedocs
