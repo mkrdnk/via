@@ -3,3 +3,4 @@
 /site/
 /.shards/
 *.dwarf
+config.yaml
