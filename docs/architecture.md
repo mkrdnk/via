@@ -7,6 +7,23 @@ waits yield to the Crystal runtime scheduler, and Via does not put requests
 behind a global lock. Independent client connections can therefore make
 progress concurrently.
 
+## Code boundaries
+
+The implementation is split by responsibility:
+
+- `config*` parses, merges, validates, watches, and reloads YAML;
+- `route` contains immutable route targets, while `router` only selects one;
+- `forwarded_headers` owns HTTP intermediary header policy;
+- `proxy` coordinates routing, upstream clients, and response streaming;
+- `static_path` owns filesystem containment rules used by both validation and
+  runtime static serving;
+- `proxy_generation` tracks in-flight work during atomic replacement;
+- `runtime_state` publishes one proxy and TLS generation to new requests;
+- `server` owns listener lifecycle, and `cli` owns process lifecycle.
+
+This keeps configuration, routing, transport, and lifecycle decisions
+independent and directly testable.
+
 ## Request flow
 
 ```text

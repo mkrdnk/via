@@ -15,7 +15,8 @@ Via applies the following request header policy:
 - `Host` is set to the selected upstream authority, including a non-default
   port;
 - `X-Forwarded-Host` is set to the original `Host` header;
-- `X-Forwarded-Proto` is set by Via and is currently `http`;
+- `X-Forwarded-Proto` is set by Via to the downstream scheme (`http` or
+  `https`);
 - the direct client IP is appended to `X-Forwarded-For`.
 
 Via overwrites incoming `X-Forwarded-Host` and `X-Forwarded-Proto` values.

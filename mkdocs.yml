@@ -2,14 +2,17 @@ site_name: Via
 
 nav:
   - Overview: index.md
-  - Getting started: getting-started.md
-  - Configuration and routing: configuration.md
-  - Proxy behavior: proxy-behavior.md
-  - Error pages and request IDs: errors.md
-  - Debug mode and hot reload: hot-reload.md
-  - TLS: tls.md
-  - Static files: static-files.md
-  - Architecture: architecture.md
+  - Guide:
+      - Getting started: getting-started.md
+      - Configuration and routing: configuration.md
+      - TLS: tls.md
+      - Static files: static-files.md
+  - Operations:
+      - Debug mode and hot reload: hot-reload.md
+      - Error pages and request IDs: errors.md
+  - Internals:
+      - Proxy behavior: proxy-behavior.md
+      - Architecture: architecture.md
   - Development and benchmarking: development.md
 
 theme:

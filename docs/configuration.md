@@ -37,8 +37,9 @@ routes:
     proxy_pass: http://localhost:3000
 ```
 
-Top-level `proxy_pass` and `routes` are mutually exclusive. A route must have a
-`proxy_pass`; `host` is optional and `path` defaults to `/`.
+Top-level `proxy_pass` and `routes` are mutually exclusive. Every route must
+have exactly one target: `proxy_pass` or `static`. `host` is optional and
+`path` defaults to `/`.
 
 ## Path matching
 
