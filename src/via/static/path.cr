@@ -1,5 +1,5 @@
-module Via
-  module StaticPath
+module Via::Static
+  module Path
     extend self
 
     def canonical_root(path : String) : String
@@ -8,7 +8,7 @@ module Via
 
     def normalize_relative(path : String, *, allow_empty : Bool = false) : String?
       return if path.includes?('\0') || path.includes?('\\')
-      return if Path[path].absolute?
+      return if ::Path[path].absolute?
 
       segments = path.split('/')
       return if segments.includes?("..")

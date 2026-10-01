@@ -1,31 +1,31 @@
-module Via
+module Via::HTTP
   module ErrorPages
     record Definition, title : String, message : String
 
     DEFINITIONS = {
-      HTTP::Status::BAD_REQUEST => Definition.new(
+      ::HTTP::Status::BAD_REQUEST => Definition.new(
         "Bad Request",
         "The request could not be understood."
       ),
-      HTTP::Status::NOT_FOUND => Definition.new(
+      ::HTTP::Status::NOT_FOUND => Definition.new(
         "Not Found",
         "The requested resource was not found."
       ),
-      HTTP::Status::BAD_GATEWAY => Definition.new(
+      ::HTTP::Status::BAD_GATEWAY => Definition.new(
         "Bad Gateway",
         "The upstream server could not be reached."
       ),
-      HTTP::Status::SERVICE_UNAVAILABLE => Definition.new(
+      ::HTTP::Status::SERVICE_UNAVAILABLE => Definition.new(
         "Service Unavailable",
         "The service is temporarily unavailable."
       ),
-      HTTP::Status::GATEWAY_TIMEOUT => Definition.new(
+      ::HTTP::Status::GATEWAY_TIMEOUT => Definition.new(
         "Gateway Timeout",
         "The upstream server did not respond in time."
       ),
     }
 
-    def self.body(status : HTTP::Status, request_id : String) : String
+    def self.body(status : ::HTTP::Status, request_id : String) : String
       definition = DEFINITIONS[status]? ||
                    raise ArgumentError.new("No error page for HTTP #{status.code}")
 
@@ -39,8 +39,8 @@ module Via
     end
 
     def self.render(
-      response : HTTP::Server::Response,
-      status : HTTP::Status,
+      response : ::HTTP::Server::Response,
+      status : ::HTTP::Status,
       request_id : String,
       *,
       head : Bool = false,

@@ -56,10 +56,10 @@ module Via
         return 2
       end
 
-      model = ConfigLoader.new(path).load
-      validator = ConfigValidator.new(model)
+      model = Configuration::Loader.new(path).load
+      validator = Configuration::Validator.new(model)
       listen = validator.validate_listen
-      state = RuntimeState.new(error, debug)
+      state = Runtime::State.new(error, debug)
       tls_enabled = false
       tls = nil
 
@@ -68,7 +68,7 @@ module Via
         state.apply(validated)
         tls = validated.tls
         tls_enabled = !tls.nil?
-      rescue ex : ConfigurationError
+      rescue ex : Configuration::Error
         raise ex unless debug && model.tls.nil?
         state.reject(path, ex)
       end
@@ -79,7 +79,7 @@ module Via
       output.puts "Via #{VERSION} listening on #{scheme}://#{address}"
       output.puts "Debug mode enabled" if debug
 
-      reloader = ConfigReloader.new(path, listen, tls, state, output)
+      reloader = Configuration::Reloader.new(path, listen, tls, state, output)
       reloader.start
 
       Signal::INT.trap { server.close }
@@ -91,7 +91,7 @@ module Via
         state.close
       end
       0
-    rescue ex : ConfigurationError
+    rescue ex : Configuration::Error
       error.puts "Configuration error: #{ex.message}"
       1
     rescue ex : Socket::Error

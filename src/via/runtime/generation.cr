@@ -1,8 +1,8 @@
-module Via
+module Via::Runtime
   # :nodoc:
-  class ProxyGeneration
-    def initialize(routes : Array(Route), log : IO, debug : Bool, scheme : String)
-      @proxy = Proxy.new(routes, log, debug, scheme)
+  class Generation
+    def initialize(routes : Array(Routing::Route), log : IO, debug : Bool, scheme : String)
+      @proxy = Proxy::Handler.new(routes, log, debug, scheme)
       @mutex = Mutex.new
       @active_requests = 0
       @retired = false
@@ -16,7 +16,7 @@ module Via
       end
     end
 
-    def call(context : HTTP::Server::Context) : Nil
+    def call(context : ::HTTP::Server::Context) : Nil
       @proxy.call(context)
     end
 

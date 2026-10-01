@@ -1,51 +1,51 @@
-module Via
-  class ConfigLoader
+module Via::Configuration
+  class Loader
     CONFIG_EXTENSIONS = {".yaml", ".yml"}
 
     def initialize(@path : String)
     end
 
-    def load : Config
+    def load : Model
       if File.directory?(@path)
         load_directory
       else
-        Config.load(@path)
+        Model.load(@path)
       end
     rescue ex : File::Error
-      raise ConfigurationError.new("Could not read configuration #{@path}: #{ex.message}")
+      raise Error.new("Could not read configuration #{@path}: #{ex.message}")
     end
 
-    private def load_directory : Config
+    private def load_directory : Model
       files = config_files
       if files.empty?
-        raise ConfigurationError.new("Configuration directory #{@path} contains no YAML files")
+        raise Error.new("Configuration directory #{@path} contains no YAML files")
       end
 
-      fragments = files.map { |file| Config.load(file) }
+      fragments = files.map { |file| Model.load(file) }
       listens = fragments.compact_map(&.listen)
       proxy_passes = fragments.compact_map(&.proxy_pass)
-      routes = fragments.flat_map { |fragment| fragment.routes || [] of RouteConfig }
+      routes = fragments.flat_map { |fragment| fragment.routes || [] of Route }
       tls_configs = fragments.compact_map(&.tls)
 
       if listens.size > 1
-        raise ConfigurationError.new(
+        raise Error.new(
           "Configuration directory must declare listen exactly once, found #{listens.size}"
         )
       end
 
       if proxy_passes.size > 1
-        raise ConfigurationError.new(
+        raise Error.new(
           "Configuration directory must declare proxy_pass at most once, found #{proxy_passes.size}"
         )
       end
 
       if tls_configs.size > 1
-        raise ConfigurationError.new(
+        raise Error.new(
           "Configuration directory must declare tls at most once, found #{tls_configs.size}"
         )
       end
 
-      Config.new(
+      Model.new(
         listen: listens.first?,
         proxy_pass: proxy_passes.first?,
         routes: routes.empty? ? nil : routes,

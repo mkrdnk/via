@@ -1,4 +1,4 @@
-module Via
+module Via::Routing
   record StaticTarget, root : String, fallback : String?
 
   record Route,

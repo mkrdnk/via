@@ -1,13 +1,13 @@
 require "mime"
 
-module Via
-  module StaticFiles
+module Via::Static
+  module Files
     extend self
 
     def call(
-      context : HTTP::Server::Context,
+      context : ::HTTP::Server::Context,
       route_path : String,
-      target : StaticTarget,
+      target : Routing::StaticTarget,
       request_id : String,
     ) : Nil
       request = context.request
@@ -22,17 +22,17 @@ module Via
         return
       end
 
-      resolved = StaticPath.resolve(target.root, relative_path)
+      resolved = Path.resolve(target.root, relative_path)
       if resolved && resolved[1].directory?
         unless request.path.ends_with?('/')
           redirect_to_directory(context)
           return
         end
-        resolved = StaticPath.resolve(target.root, File.join(relative_path, "index.html"))
+        resolved = Path.resolve(target.root, File.join(relative_path, "index.html"))
       end
 
       unless resolved && resolved[1].file?
-        resolved = target.fallback.try { |fallback| StaticPath.resolve(target.root, fallback) }
+        resolved = target.fallback.try { |fallback| Path.resolve(target.root, fallback) }
       end
 
       unless resolved && resolved[1].file?
@@ -55,17 +55,17 @@ module Via
                    decoded.byte_slice(route_path.bytesize..).lchop('/')
                  end
 
-      StaticPath.normalize_relative(relative, allow_empty: true)
+      Path.normalize_relative(relative, allow_empty: true)
     end
 
-    private def redirect_to_directory(context : HTTP::Server::Context) : Nil
+    private def redirect_to_directory(context : ::HTTP::Server::Context) : Nil
       uri = context.request.uri.dup
       uri.path = "#{context.request.path}/"
       context.response.redirect(uri, :moved_permanently)
     end
 
     private def serve(
-      context : HTTP::Server::Context,
+      context : ::HTTP::Server::Context,
       path : String,
       info : File::Info,
       request_id : String,
@@ -75,7 +75,7 @@ module Via
       response.content_type = MIME.from_filename(path, "application/octet-stream")
       response.headers["Accept-Ranges"] = "bytes"
       response.headers["ETag"] = etag
-      response.headers["Last-Modified"] = HTTP.format_time(info.modification_time)
+      response.headers["Last-Modified"] = ::HTTP.format_time(info.modification_time)
 
       if not_modified?(context.request, etag, info.modification_time)
         response.status = :not_modified
@@ -98,7 +98,7 @@ module Via
     end
 
     private def serve_range(
-      context : HTTP::Server::Context,
+      context : ::HTTP::Server::Context,
       path : String,
       range : Range(Int64, Int64),
       file_size : Int64,
@@ -120,7 +120,7 @@ module Via
     end
 
     private def copy_file(
-      context : HTTP::Server::Context,
+      context : ::HTTP::Server::Context,
       path : String,
       size : Int64,
       request_id : String,
@@ -152,13 +152,13 @@ module Via
       start..Math.min(finish, file_size - 1)
     end
 
-    private def not_modified?(request : HTTP::Request, etag : String, modified_at : Time) : Bool
+    private def not_modified?(request : ::HTTP::Request, etag : String, modified_at : Time) : Bool
       if header = request.headers["If-None-Match"]?
         return header.split(',').any? { |candidate| candidate.strip.in?("*", etag) }
       end
 
       if header = request.headers["If-Modified-Since"]?
-        if timestamp = HTTP.parse_time(header)
+        if timestamp = ::HTTP.parse_time(header)
           return modified_at <= timestamp + 1.second
         end
       end
@@ -170,16 +170,16 @@ module Via
       %{W/"#{info.modification_time.to_unix_ns}-#{info.size}"}
     end
 
-    private def method_not_allowed(response : HTTP::Server::Response) : Nil
+    private def method_not_allowed(response : ::HTTP::Server::Response) : Nil
       response.status = :method_not_allowed
       response.headers["Allow"] = "GET, HEAD"
       response.content_length = 0
     end
 
-    private def not_found(context : HTTP::Server::Context, request_id : String) : Nil
-      ErrorPages.render(
+    private def not_found(context : ::HTTP::Server::Context, request_id : String) : Nil
+      Via::HTTP::ErrorPages.render(
         context.response,
-        HTTP::Status::NOT_FOUND,
+        ::HTTP::Status::NOT_FOUND,
         request_id,
         head: context.request.method == "HEAD"
       )

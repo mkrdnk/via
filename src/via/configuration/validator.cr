@@ -1,26 +1,26 @@
 require "set"
 require "uri"
 
-module Via
-  class ConfigValidator
-    def initialize(@config : Config)
+module Via::Configuration
+  class Validator
+    def initialize(@config : Model)
     end
 
-    def validate : ValidatedConfig
+    def validate : Validated
       listen = validate_listen
       routes = build_routes
       reject_duplicate_routes(routes)
       tls = validate_tls
-      ValidatedConfig.new(listen, routes, tls)
+      Validated.new(listen, routes, tls)
     end
 
     def validate_listen : ListenAddress
       value = @config.listen ||
-              raise ConfigurationError.new("Configuration requires listen")
+              raise Error.new("Configuration requires listen")
       parse_listen(value)
     end
 
-    def validate_tls : TlsConfig?
+    def validate_tls : TLS?
       return unless tls = @config.tls
 
       validate_tls_file(tls.cert, "tls.cert")
@@ -28,37 +28,37 @@ module Via
       tls
     end
 
-    private def build_routes : Array(Route)
+    private def build_routes : Array(Routing::Route)
       proxy_pass = @config.proxy_pass
       route_configs = @config.routes
 
       if proxy_pass && route_configs
-        raise ConfigurationError.new("Use either proxy_pass or routes, not both")
+        raise Error.new("Use either proxy_pass or routes, not both")
       end
 
       if proxy_pass
-        return [Route.new(nil, "/", parse_upstream(proxy_pass))]
+        return [Routing::Route.new(nil, "/", parse_upstream(proxy_pass))]
       end
 
       unless route_configs && !route_configs.empty?
-        raise ConfigurationError.new("Configuration requires proxy_pass or at least one route")
+        raise Error.new("Configuration requires proxy_pass or at least one route")
       end
 
       route_configs.map_with_index do |route, index|
         upstream = route.proxy_pass
         static_config = route.static_config
         if upstream && static_config
-          raise ConfigurationError.new(
+          raise Error.new(
             "routes[#{index}] must use either proxy_pass or static, not both"
           )
         end
         unless upstream || static_config
-          raise ConfigurationError.new(
+          raise Error.new(
             "routes[#{index}] requires proxy_pass or static"
           )
         end
 
-        Route.new(
+        Routing::Route.new(
           parse_host(route.host, index),
           parse_path(route.path, index),
           upstream ? parse_upstream(upstream, "routes[#{index}].proxy_pass") : nil,
@@ -75,13 +75,13 @@ module Via
       unless port && port.in?(1..65_535) && host &&
              (host.empty? || valid_hostname?(host)) && uri.path.empty? &&
              uri.query.nil? && uri.fragment.nil?
-        raise ConfigurationError.new("Invalid listen address: #{value}")
+        raise Error.new("Invalid listen address: #{value}")
       end
 
       host = "0.0.0.0" if host.empty?
       ListenAddress.new(host, port)
     rescue URI::Error
-      raise ConfigurationError.new("Invalid listen address: #{value}")
+      raise Error.new("Invalid listen address: #{value}")
     end
 
     private def parse_host(value : String?, route_index : Int32) : String?
@@ -89,22 +89,22 @@ module Via
 
       uri = URI.parse("http://#{value.strip}")
       hostname = uri.hostname
-      normalized = hostname.try { |host| Router.normalize_hostname(host) }
+      normalized = hostname.try { |host| Routing::Router.normalize_hostname(host) }
 
       unless hostname && valid_hostname?(hostname) && normalized && !normalized.empty? &&
              uri.port.nil? && uri.path.empty? &&
              uri.query.nil? && uri.fragment.nil? && uri.user.nil? && uri.password.nil?
-        raise ConfigurationError.new("Invalid host in routes[#{route_index}]: #{value}")
+        raise Error.new("Invalid host in routes[#{route_index}]: #{value}")
       end
 
       normalized
     rescue URI::Error
-      raise ConfigurationError.new("Invalid host in routes[#{route_index}]: #{value}")
+      raise Error.new("Invalid host in routes[#{route_index}]: #{value}")
     end
 
     private def parse_path(value : String, route_index : Int32) : String
       unless value.starts_with?('/') && !value.includes?('?') && !value.includes?('#')
-        raise ConfigurationError.new("Invalid path in routes[#{route_index}]: #{value}")
+        raise Error.new("Invalid path in routes[#{route_index}]: #{value}")
       end
 
       normalized = value
@@ -121,27 +121,27 @@ module Via
       unless uri.scheme.in?("http", "https") && host && valid_hostname?(host) &&
              uri.user.nil? && uri.password.nil? && uri.query.nil? && uri.fragment.nil? &&
              (uri.path.empty? || uri.path == "/")
-        raise ConfigurationError.new("Invalid upstream URL in #{field}: #{value}")
+        raise Error.new("Invalid upstream URL in #{field}: #{value}")
       end
 
       uri.path = ""
       uri
     rescue URI::Error
-      raise ConfigurationError.new("Invalid upstream URL in #{field}: #{value}")
+      raise Error.new("Invalid upstream URL in #{field}: #{value}")
     end
 
-    private def parse_static(value : String | StaticConfig, route_index : Int32) : StaticTarget
-      config = value.is_a?(String) ? StaticConfig.new(value) : value
+    private def parse_static(value : String | Static, route_index : Int32) : Routing::StaticTarget
+      config = value.is_a?(String) ? Static.new(value) : value
       root = begin
-        StaticPath.canonical_root(config.root)
+        ::Via::Static::Path.canonical_root(config.root)
       rescue File::Error
-        raise ConfigurationError.new(
+        raise Error.new(
           "Static root in routes[#{route_index}] is not a readable directory: #{config.root}"
         )
       end
 
       unless File.directory?(root) && File::Info.readable?(root)
-        raise ConfigurationError.new(
+        raise Error.new(
           "Static root in routes[#{route_index}] is not a readable directory: #{config.root}"
         )
       end
@@ -151,7 +151,7 @@ module Via
         fallback = validate_static_fallback(root, fallback, route_index)
       end
 
-      StaticTarget.new(root, fallback)
+      Routing::StaticTarget.new(root, fallback)
     end
 
     private def validate_static_fallback(
@@ -159,16 +159,16 @@ module Via
       fallback : String,
       route_index : Int32,
     ) : String
-      normalized = StaticPath.normalize_relative(fallback)
+      normalized = ::Via::Static::Path.normalize_relative(fallback)
       unless normalized
-        raise ConfigurationError.new(
+        raise Error.new(
           "Invalid static fallback in routes[#{route_index}]: #{fallback}"
         )
       end
 
-      resolved = StaticPath.resolve(root, normalized)
+      resolved = ::Via::Static::Path.resolve(root, normalized)
       unless resolved && resolved[1].file? && File::Info.readable?(resolved[0])
-        raise ConfigurationError.new(
+        raise Error.new(
           "Static fallback in routes[#{route_index}] is not a readable file: #{fallback}"
         )
       end
@@ -176,14 +176,14 @@ module Via
       normalized
     end
 
-    private def reject_duplicate_routes(routes : Array(Route)) : Nil
+    private def reject_duplicate_routes(routes : Array(Routing::Route)) : Nil
       seen = Set(Tuple(String?, String)).new
 
       routes.each do |route|
         key = {route.host, route.path}
         unless seen.add?(key)
           description = route.host ? "#{route.host}#{route.path}" : route.path
-          raise ConfigurationError.new("Duplicate route: #{description}")
+          raise Error.new("Duplicate route: #{description}")
         end
       end
     end
@@ -194,11 +194,11 @@ module Via
 
     private def validate_tls_file(path : String, field : String) : Nil
       if path.empty?
-        raise ConfigurationError.new("#{field} must not be empty")
+        raise Error.new("#{field} must not be empty")
       end
       info = File.info?(path)
       unless info && info.file? && File::Info.readable?(path)
-        raise ConfigurationError.new("#{field} is not a readable file: #{path}")
+        raise Error.new("#{field} is not a readable file: #{path}")
       end
     end
   end

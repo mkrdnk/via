@@ -2,17 +2,21 @@ module Via
   class Server
     getter address : Socket::IPAddress?
 
-    def initialize(config : ValidatedConfig, log : IO = STDERR, debug : Bool = false)
-      @state = RuntimeState.new(log, debug)
+    def initialize(config : Configuration::Validated, log : IO = STDERR, debug : Bool = false)
+      @state = Runtime::State.new(log, debug)
       @state.apply(config)
       @listen = config.listen
       @tls = !config.tls.nil?
-      @http_server = HTTP::Server.new { |context| @state.call(context) }
+      @http_server = ::HTTP::Server.new { |context| @state.call(context) }
       @address = nil
     end
 
-    def initialize(@listen : ListenAddress, @state : RuntimeState, @tls : Bool = false)
-      @http_server = HTTP::Server.new { |context| @state.call(context) }
+    def initialize(
+      @listen : Configuration::ListenAddress,
+      @state : Runtime::State,
+      @tls : Bool = false,
+    )
+      @http_server = ::HTTP::Server.new { |context| @state.call(context) }
       @address = nil
     end
 
@@ -21,9 +25,9 @@ module Via
 
       if @tls
         {% if flag?(:without_openssl) %}
-          raise ConfigurationError.new("TLS is unavailable because Via was built without OpenSSL")
+          raise Configuration::Error.new("TLS is unavailable because Via was built without OpenSSL")
         {% else %}
-          tls_server = ReloadableTlsServer.new(@listen.host, @listen.port, @state)
+          tls_server = TLS::ReloadableServer.new(@listen.host, @listen.port, @state)
           @http_server.bind(tls_server)
           @address = tls_server.local_address
         {% end %}

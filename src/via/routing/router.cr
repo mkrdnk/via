@@ -1,4 +1,4 @@
-module Via
+module Via::Routing
   # Selects a route without depending on HTTP server or client types.
   #
   # Paths use segment-aware prefix matching. The longest matching path wins;

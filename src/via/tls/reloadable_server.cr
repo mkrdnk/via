@@ -1,11 +1,11 @@
-module Via
+module Via::TLS
   {% unless flag?(:without_openssl) %}
-    class ReloadableTlsServer
+    class ReloadableServer
       include Socket::Server
 
       getter local_address : Socket::IPAddress
 
-      def initialize(host : String, port : Int32, @state : RuntimeState)
+      def initialize(host : String, port : Int32, @state : Runtime::State)
         @tcp_server = TCPServer.new(host, port)
         @local_address = @tcp_server.local_address
       end

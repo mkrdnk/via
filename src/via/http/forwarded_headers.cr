@@ -1,4 +1,4 @@
-module Via
+module Via::HTTP
   module ForwardedHeaders
     extend self
 
@@ -13,7 +13,7 @@ module Via
       "Upgrade",
     }
 
-    def filter(source : HTTP::Headers) : HTTP::Headers
+    def filter(source : ::HTTP::Headers) : ::HTTP::Headers
       headers = source.dup
 
       if connection = headers["Connection"]?
@@ -27,11 +27,11 @@ module Via
     end
 
     def request(
-      request : HTTP::Request,
+      request : ::HTTP::Request,
       upstream : URI,
       request_id : String,
       scheme : String,
-    ) : HTTP::Headers
+    ) : ::HTTP::Headers
       headers = filter(request.headers)
       original_host = request.headers["Host"]?
 
@@ -53,21 +53,21 @@ module Via
       headers
     end
 
-    def copy_response(source : HTTP::Headers, destination : HTTP::Headers) : Nil
+    def copy_response(source : ::HTTP::Headers, destination : ::HTTP::Headers) : Nil
       filter(source).each do |name, values|
         values.each { |value| destination.add(name, value) }
       end
     end
 
-    def valid_host?(request : HTTP::Request) : Bool
+    def valid_host?(request : ::HTTP::Request) : Bool
       host = request.headers["Host"]?
       return false if request.version == "HTTP/1.1" && host.nil?
       return true unless host
 
-      !Router.normalize_request_host(host).nil?
+      !Routing::Router.normalize_request_host(host).nil?
     end
 
-    private def append_forwarded_for(headers : HTTP::Headers, client_ip : String) : Nil
+    private def append_forwarded_for(headers : ::HTTP::Headers, client_ip : String) : Nil
       if forwarded_for = headers["X-Forwarded-For"]?.try(&.presence)
         headers["X-Forwarded-For"] = "#{forwarded_for}, #{client_ip}"
       else

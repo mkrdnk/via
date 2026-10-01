@@ -1,19 +1,19 @@
-module Via
+module Via::Proxy
   # Keeps a bounded number of idle clients while allowing concurrency to grow
   # with demand. A checked-out HTTP::Client is owned by one fiber only.
-  class ClientPool
+  class Pool
     class ClosedError < Exception
     end
 
     def initialize(@upstream : URI, max_idle = 32)
       raise ArgumentError.new("max_idle must be positive") unless max_idle > 0
 
-      @available = Channel(HTTP::Client).new(max_idle)
+      @available = Channel(::HTTP::Client).new(max_idle)
       @mutex = Mutex.new
       @closed = false
     end
 
-    def with(& : HTTP::Client ->)
+    def with(& : ::HTTP::Client ->)
       client = checkout
       reusable = false
 
@@ -42,7 +42,7 @@ module Via
       end
     end
 
-    private def checkout : HTTP::Client
+    private def checkout : ::HTTP::Client
       @mutex.synchronize do
         raise ClosedError.new("client pool is closed") if @closed
 
@@ -50,14 +50,14 @@ module Via
         when client = @available.receive
           client
         else
-          client = HTTP::Client.new(@upstream)
+          client = ::HTTP::Client.new(@upstream)
           client.compress = false
           client
         end
       end
     end
 
-    private def checkin(client : HTTP::Client) : Nil
+    private def checkin(client : ::HTTP::Client) : Nil
       @mutex.synchronize do
         if @closed
           client.close

@@ -1,20 +1,20 @@
-module Via
-  class ConfigReloader
+module Via::Configuration
+  class Reloader
     @dependencies : Array(String)
 
     def initialize(
       @path : String,
       @listen : ListenAddress,
-      tls : TlsConfig?,
-      @state : RuntimeState,
+      tls : TLS?,
+      @state : Runtime::State,
       @log : IO = STDOUT,
-      poll_interval : Time::Span = ConfigWatcher::DEFAULT_POLL_INTERVAL,
-      debounce : Time::Span = ConfigWatcher::DEFAULT_DEBOUNCE,
+      poll_interval : Time::Span = Watcher::DEFAULT_POLL_INTERVAL,
+      debounce : Time::Span = Watcher::DEFAULT_DEBOUNCE,
     )
       @tls_enabled = !tls.nil?
       @dependency_mutex = Mutex.new
       @dependencies = tls_paths(tls)
-      @watcher = ConfigWatcher.new(
+      @watcher = Watcher.new(
         @path,
         poll_interval,
         debounce,
@@ -31,20 +31,20 @@ module Via
     end
 
     def reload : Bool
-      model = ConfigLoader.new(@path).load
+      model = Loader.new(@path).load
       update_dependencies(model.tls)
       config = model.validate
       if config.listen != @listen
-        raise ConfigurationError.new("listen cannot be changed during hot reload")
+        raise Error.new("listen cannot be changed during hot reload")
       end
       if !config.tls.nil? != @tls_enabled
-        raise ConfigurationError.new("TLS cannot be enabled or disabled during hot reload")
+        raise Error.new("TLS cannot be enabled or disabled during hot reload")
       end
 
       @state.apply(config)
       @log.puts "Configuration reloaded"
       true
-    rescue ex : ConfigurationError
+    rescue ex : Error
       @state.reject(@path, ex)
       false
     end
@@ -53,12 +53,12 @@ module Via
       @dependency_mutex.synchronize { @dependencies.dup }
     end
 
-    private def update_dependencies(tls : TlsConfig?) : Nil
+    private def update_dependencies(tls : TLS?) : Nil
       paths = tls_paths(tls)
       @dependency_mutex.synchronize { @dependencies = paths }
     end
 
-    private def tls_paths(tls : TlsConfig?) : Array(String)
+    private def tls_paths(tls : TLS?) : Array(String)
       tls ? [tls.cert, tls.key] : [] of String
     end
   end

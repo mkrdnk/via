@@ -1,6 +1,6 @@
 require "./spec_helper"
 
-describe Via::Config do
+describe Via::Configuration::Model do
   it "loads and validates the minimal configuration" do
     config = Via::Config.from_yaml <<-YAML
       listen: ":8080"
@@ -236,7 +236,7 @@ describe Via::Config do
   end
 end
 
-describe Via::Router do
+describe Via::Routing::Router do
   root = Via::Route.new(nil, "/", URI.parse("http://root"))
   api = Via::Route.new(nil, "/api", URI.parse("http://api"))
   api_v2 = Via::Route.new(nil, "/api/v2", URI.parse("http://api-v2"))
@@ -268,7 +268,7 @@ describe Via::Router do
   end
 end
 
-describe Via::ErrorPages do
+describe Via::HTTP::ErrorPages do
   it "embeds status details and the request ID for every gateway error" do
     statuses = {
       HTTP::Status::BAD_REQUEST,
@@ -287,7 +287,7 @@ describe Via::ErrorPages do
   end
 end
 
-describe Via::ConfigWatcher do
+describe Via::Configuration::Watcher do
   it "debounces a burst of file changes" do
     with_temp_directory do |directory|
       path = File.join(directory, "via.yaml")
@@ -371,7 +371,7 @@ describe Via::ConfigWatcher do
   end
 end
 
-describe Via::RuntimeState do
+describe Via::Runtime::State do
   it "atomically swaps proxy generations" do
     first_entered = Channel(Nil).new(1)
     release_first = Channel(Nil).new(1)
@@ -545,7 +545,7 @@ describe Via::CLI do
   end
 end
 
-describe Via::StaticFiles do
+describe Via::Static::Files do
   it "serves GET, HEAD, index files, and cache validators" do
     with_temp_directory do |directory|
       File.write(File.join(directory, "index.html"), "<h1>home</h1>")
@@ -692,7 +692,7 @@ describe Via::StaticFiles do
   end
 end
 
-describe Via::Proxy do
+describe Via::Proxy::Handler do
   it "removes standard and Connection-nominated hop-by-hop headers" do
     source = HTTP::Headers{
       "Connection"   => "keep-alive, X-Internal",
@@ -818,7 +818,7 @@ describe Via::Proxy do
 
     with_server(upstream) do |upstream_address|
       route = Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))
-      handler = Via::Proxy.new([route], IO::Memory.new, false, "https")
+      handler = Via::Proxy::Handler.new([route], IO::Memory.new, false, "https")
       proxy = HTTP::Server.new { |context| handler.call(context) }
 
       with_server(proxy) do |proxy_address|

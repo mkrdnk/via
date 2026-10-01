@@ -1,7 +1,7 @@
 require "atomic"
 
-module Via
-  class ConfigWatcher
+module Via::Configuration
+  class Watcher
     DEFAULT_POLL_INTERVAL = 100.milliseconds
     DEFAULT_DEBOUNCE      = 200.milliseconds
 
@@ -69,7 +69,7 @@ module Via
     private def watched_config_paths : Array(String)
       if File.directory?(@path)
         Dir.children(@path)
-          .select { |name| ConfigLoader::CONFIG_EXTENSIONS.includes?(File.extname(name).downcase) }
+          .select { |name| Loader::CONFIG_EXTENSIONS.includes?(File.extname(name).downcase) }
           .map { |name| File.join(@path, name) }
       else
         [@path]

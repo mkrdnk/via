@@ -1,15 +1,15 @@
-module Via
-  module Tls
+module Via::TLS
+  module ContextBuilder
     {% if flag?(:without_openssl) %}
-      def self.build(config : TlsConfig?) : Nil
+      def self.build(config : Configuration::TLS?) : Nil
         if config
-          raise ConfigurationError.new(
+          raise Configuration::Error.new(
             "TLS is unavailable because Via was built without OpenSSL"
           )
         end
       end
     {% else %}
-      def self.build(config : TlsConfig?) : OpenSSL::SSL::Context::Server?
+      def self.build(config : Configuration::TLS?) : OpenSSL::SSL::Context::Server?
         return unless config
 
         context = OpenSSL::SSL::Context::Server.new
@@ -17,7 +17,7 @@ module Via
         context.private_key = config.key
         context
       rescue ex : OpenSSL::Error
-        raise ConfigurationError.new("Could not load TLS certificate or key: #{ex.message}")
+        raise Configuration::Error.new("Could not load TLS certificate or key: #{ex.message}")
       end
     {% end %}
   end

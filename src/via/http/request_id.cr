@@ -1,6 +1,6 @@
 require "random/secure"
 
-module Via
+module Via::HTTP
   module RequestId
     BYTES = 16
 
