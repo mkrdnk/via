@@ -1,5 +1,8 @@
 name: Build release binaries
 
+env:
+  CRYSTAL_VERSION: 1.21.1
+
 on:
   workflow_call:
     inputs:
@@ -86,9 +89,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Crystal
-        uses: crystal-lang/install-crystal@v1
-        with:
-          crystal: 1.21.1
+        shell: bash
+        run: sh scripts/install-crystal.sh
 
       - name: Build release binary
         shell: bash

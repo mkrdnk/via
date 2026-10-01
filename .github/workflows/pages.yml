@@ -1,5 +1,8 @@
 name: Pages
 
+env:
+  CRYSTAL_VERSION: 1.21.1
+
 on:
   release:
     types:
@@ -26,9 +29,7 @@ jobs:
           ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
 
       - name: Install Crystal
-        uses: crystal-lang/install-crystal@v1
-        with:
-          crystal: 1.21.1
+        run: sh scripts/install-crystal.sh
 
       - name: Set up Python
         uses: actions/setup-python@v5
