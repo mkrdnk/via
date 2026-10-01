@@ -1,0 +1,17 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 120 64"
+  fill="none"
+>
+  <!-- V -->
+  <path
+    d="M8 10H22L40 44L58 10H72L47 56H33L8 10Z"
+    fill="#111111"
+  />
+
+  <!-- Λ -->
+  <path
+    d="M54 56H68L86 22L104 56H118L93 10H79L54 56Z"
+    fill="#111111"
+  />
+</svg>
