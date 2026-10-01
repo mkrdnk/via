@@ -7,6 +7,8 @@ The error page renderer supports:
 
 - `400 Bad Request`;
 - `404 Not Found`;
+- `405 Method Not Allowed`;
+- `416 Range Not Satisfiable`;
 - `502 Bad Gateway`;
 - `503 Service Unavailable`;
 - `504 Gateway Timeout`.
@@ -14,7 +16,11 @@ The error page renderer supports:
 `503` is reserved for temporarily unavailable runtime state, and `504` will be
 used by configurable upstream timeouts. Those conditions are not emitted yet.
 
-An error response is plain text:
+Error responses are self-contained HTML pages. The Via favicon is embedded in
+the binary and referenced through a data URI, so it works even when no static
+route or external asset directory is available.
+
+The visible page remains intentionally minimal:
 
 ```text
 via
@@ -26,6 +32,8 @@ The upstream server could not be reached.
 
 Request ID: 8efb1e82e14bd13639d777ca8b17e843
 ```
+
+Debug configuration diagnostics use the same layout and favicon.
 
 ## Request IDs
 
@@ -48,6 +56,8 @@ Via currently emits:
 
 - `400` when an HTTP/1.1 request has no valid `Host` header;
 - `404` when no route matches;
+- `405` for unsupported methods on static routes;
+- `416` for invalid or unsatisfiable static byte ranges;
 - `502` when the selected upstream cannot be reached or disconnects before
   returning a response.
 

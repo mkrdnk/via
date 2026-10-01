@@ -269,10 +269,12 @@ describe Via::Routing::Router do
 end
 
 describe Via::HTTP::ErrorPages do
-  it "embeds status details and the request ID for every gateway error" do
+  it "embeds status details, request ID, and favicon for every Via error" do
     statuses = {
       HTTP::Status::BAD_REQUEST,
       HTTP::Status::NOT_FOUND,
+      HTTP::Status::METHOD_NOT_ALLOWED,
+      HTTP::Status::RANGE_NOT_SATISFIABLE,
       HTTP::Status::BAD_GATEWAY,
       HTTP::Status::SERVICE_UNAVAILABLE,
       HTTP::Status::GATEWAY_TIMEOUT,
@@ -283,6 +285,7 @@ describe Via::HTTP::ErrorPages do
       body.should contain(status.code.to_s)
       body.should contain(status.description.not_nil!)
       body.should contain("Request ID: request-id")
+      body.should contain("data:image/svg+xml;base64,")
     end
   end
 end
@@ -499,9 +502,10 @@ describe Via::Runtime::State do
       begin
         diagnostic = HTTP::Client.get("http://#{address}/")
         diagnostic.status.should eq(HTTP::Status::SERVICE_UNAVAILABLE)
-        diagnostic.body.should contain("via debug")
+        diagnostic.body.should contain("Configuration error")
         diagnostic.body.should contain("via.yaml")
         diagnostic.body.should contain("Invalid upstream URL")
+        diagnostic.body.should contain("data:image/svg+xml;base64,")
 
         state.apply(Via::ValidatedConfig.new(
           Via::ListenAddress.new("127.0.0.1", 0),
@@ -1237,7 +1241,9 @@ describe Via::Proxy::Handler do
         headers: HTTP::Headers{"Host" => "other.example.com"}
       )
       response.status.should eq(HTTP::Status::NOT_FOUND)
+      response.headers["Content-Type"].should eq("text/html; charset=utf-8")
       response.body.should contain("The requested resource was not found.")
+      response.body.should contain("data:image/svg+xml;base64,")
       request_id = response.headers["X-Request-ID"]
       request_id.should match(/\A[0-9a-f]{32}\z/)
       response.body.should contain("Request ID: #{request_id}")

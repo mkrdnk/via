@@ -100,18 +100,15 @@ module Via::Runtime
       diagnostic : Diagnostic,
     ) : Nil
       request_id = Via::HTTP::RequestId.generate
-      content = String.build do |body|
-        body << "via debug\n\n"
-        body << "Configuration error\n\n"
-        body << diagnostic.source << '\n'
-        body << diagnostic.message << "\n\n"
-        body << "Via is watching for a valid configuration.\n\n"
-        body << "Request ID: " << request_id << '\n'
-      end
+      content = Via::HTTP::ErrorPages.diagnostic(
+        diagnostic.source,
+        diagnostic.message,
+        request_id
+      )
 
       response = context.response
       response.status = :service_unavailable
-      response.content_type = "text/plain; charset=utf-8"
+      response.content_type = "text/html; charset=utf-8"
       response.content_length = content.bytesize
       response.headers["X-Request-ID"] = request_id
       response << content unless context.request.method == "HEAD"

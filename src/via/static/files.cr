@@ -12,7 +12,7 @@ module Via::Static
     ) : Nil
       request = context.request
       unless request.method.in?("GET", "HEAD")
-        method_not_allowed(context.response)
+        method_not_allowed(context, request_id)
         return
       end
 
@@ -85,9 +85,7 @@ module Via::Static
       if range_header = context.request.headers["Range"]?
         range = parse_range(range_header, info.size)
         unless range
-          response.status = :range_not_satisfiable
-          response.headers["Content-Range"] = "bytes */#{info.size}"
-          response.content_length = 0
+          range_not_satisfiable(context, info.size, request_id)
           return
         end
         serve_range(context, path, range, info.size, request_id)
@@ -170,10 +168,33 @@ module Via::Static
       %{W/"#{info.modification_time.to_unix_ns}-#{info.size}"}
     end
 
-    private def method_not_allowed(response : ::HTTP::Server::Response) : Nil
-      response.status = :method_not_allowed
-      response.headers["Allow"] = "GET, HEAD"
-      response.content_length = 0
+    private def method_not_allowed(
+      context : ::HTTP::Server::Context,
+      request_id : String,
+    ) : Nil
+      Via::HTTP::ErrorPages.render(
+        context.response,
+        ::HTTP::Status::METHOD_NOT_ALLOWED,
+        request_id,
+        additional_headers: ::HTTP::Headers{"Allow" => "GET, HEAD"}
+      )
+    end
+
+    private def range_not_satisfiable(
+      context : ::HTTP::Server::Context,
+      file_size : Int64,
+      request_id : String,
+    ) : Nil
+      Via::HTTP::ErrorPages.render(
+        context.response,
+        ::HTTP::Status::RANGE_NOT_SATISFIABLE,
+        request_id,
+        head: context.request.method == "HEAD",
+        additional_headers: ::HTTP::Headers{
+          "Accept-Ranges" => "bytes",
+          "Content-Range" => "bytes */#{file_size}",
+        }
+      )
     end
 
     private def not_found(context : ::HTTP::Server::Context, request_id : String) : Nil
