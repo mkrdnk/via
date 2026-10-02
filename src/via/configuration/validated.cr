@@ -6,5 +6,6 @@ module Via::Configuration
     routes : Array(Routing::Route),
     tls : TLS? = nil,
     log_file : String? = nil,
-    log_level : Logging::Level? = nil
+    log_level : Logging::Level? = nil,
+    config_file : String? = nil
 end

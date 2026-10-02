@@ -42,6 +42,7 @@ module Via::Configuration
     include YAML::Serializable::Strict
 
     getter listen : String?
+    getter host : String?
     getter log_file : String?
     getter log_level : String?
 
@@ -51,6 +52,9 @@ module Via::Configuration
     getter routes : Array(Route)?
     getter tls : TLS?
 
+    @[YAML::Field(ignore: true)]
+    property config_file : String?
+
     def initialize(
       @listen : String? = nil,
       @log_file : String? = nil,
@@ -58,11 +62,15 @@ module Via::Configuration
       @proxy_pass : ProxyPass? = nil,
       @routes : Array(Route)? = nil,
       @tls : TLS? = nil,
+      @host : String? = nil,
+      @config_file : String? = nil,
     )
     end
 
     def self.load(path : String) : self
-      File.open(path) { |file| from_yaml(file) }
+      model = File.open(path) { |file| from_yaml(file) }
+      model.config_file = path
+      model
     rescue ex : File::Error
       raise Error.new("Could not read configuration #{path}: #{ex.message}")
     rescue ex : YAML::Error

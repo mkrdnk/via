@@ -25,8 +25,10 @@ require "./via/runtime/state"
 require "./via/tls/reloadable_server"
 require "./via/configuration/watcher"
 require "./via/configuration/reloader"
+require "./via/configuration/group_reloader"
 require "./via/console/banner"
 require "./via/server"
+require "./via/server_group"
 require "./via/cli"
 
 module Via

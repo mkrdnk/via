@@ -13,7 +13,7 @@ module Via::Configuration
       tls = validate_tls
       log_file = validate_log_file
       log_level = validate_log_level
-      Validated.new(listen, routes, tls, log_file, log_level)
+      Validated.new(listen, routes, tls, log_file, log_level, @config.config_file)
     end
 
     def validate_listen : ListenAddress
@@ -54,13 +54,19 @@ module Via::Configuration
     private def build_routes : Array(Routing::Route)
       proxy_pass = @config.proxy_pass
       route_configs = @config.routes
+      top_level_host = @config.host
 
       if proxy_pass && route_configs
         raise Error.new("Use either proxy_pass or routes, not both")
       end
 
+      if top_level_host && !proxy_pass
+        raise Error.new("host can only be used with top-level proxy_pass")
+      end
+
       if proxy_pass
-        return [build_proxy_route(nil, "/", proxy_pass)]
+        host = parse_host(top_level_host, "host")
+        return [build_proxy_route(host, "/", proxy_pass)]
       end
 
       unless route_configs && !route_configs.empty?
@@ -81,7 +87,7 @@ module Via::Configuration
           )
         end
 
-        host = parse_host(route.host, index)
+        host = parse_host(route.host, "routes[#{index}].host")
         path = parse_path(route.path, index)
         if upstream
           build_proxy_route(host, path, upstream, "routes[#{index}].proxy_pass")
@@ -104,7 +110,8 @@ module Via::Configuration
     ) : Routing::Route
       case value
       when String
-        Routing::Route.new(host, path, parse_upstream(value, field))
+        expanded = expand_upstream(value, host, field)
+        Routing::Route.new(host, path, parse_upstream(expanded, field))
       when Int32
         Routing::Route.new(
           host,
@@ -116,6 +123,17 @@ module Via::Configuration
       else
         raise "Unsupported proxy_pass value"
       end
+    end
+
+    private def expand_upstream(value : String, host : String?, field : String) : String
+      return value unless value.includes?("$host")
+
+      unless host
+        raise Error.new("$host in #{field} requires a configured host")
+      end
+
+      authority_host = host.includes?(':') ? "[#{host}]" : host
+      value.gsub("$host", authority_host)
     end
 
     private def parse_listen(value : String) : ListenAddress
@@ -135,7 +153,7 @@ module Via::Configuration
       raise Error.new("Invalid listen address: #{value}")
     end
 
-    private def parse_host(value : String?, route_index : Int32) : String?
+    private def parse_host(value : String?, field : String) : String?
       return unless value
 
       uri = URI.parse("http://#{value.strip}")
@@ -145,12 +163,12 @@ module Via::Configuration
       unless hostname && valid_hostname?(hostname) && normalized && !normalized.empty? &&
              uri.port.nil? && uri.path.empty? &&
              uri.query.nil? && uri.fragment.nil? && uri.user.nil? && uri.password.nil?
-        raise Error.new("Invalid host in routes[#{route_index}]: #{value}")
+        raise Error.new("Invalid #{field}: #{value}")
       end
 
       normalized
     rescue URI::Error
-      raise Error.new("Invalid host in routes[#{route_index}]: #{value}")
+      raise Error.new("Invalid #{field}: #{value}")
     end
 
     private def parse_path(value : String, route_index : Int32) : String
@@ -248,7 +266,9 @@ module Via::Configuration
     end
 
     private def valid_hostname?(hostname : String) : Bool
-      !hostname.empty? && hostname.each_char.none?(&.whitespace?)
+      !hostname.empty? &&
+        !hostname.includes?('$') &&
+        hostname.each_char.none?(&.whitespace?)
     end
 
     private def validate_tls_file(path : String, field : String) : Nil

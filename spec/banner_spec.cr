@@ -47,6 +47,34 @@ describe Via::Console::Banner do
     text.should contain("→ mode       debug")
   end
 
+  it "lists every configured listener" do
+    first = Via::Configuration::Validated.new(
+      Via::Configuration::ListenAddress.new("0.0.0.0", 80),
+      [Via::Routing::Route.new(nil, "/", URI.parse("http://localhost:3000"))]
+    )
+    second = Via::Configuration::Validated.new(
+      Via::Configuration::ListenAddress.new("0.0.0.0", 443),
+      [Via::Routing::Route.new(nil, "/", URI.parse("http://localhost:4000"))],
+      tls: Via::Configuration::TLS.new("cert.pem", "key.pem")
+    )
+    output = IO::Memory.new
+
+    Via::Console::Banner.render_many(
+      output,
+      config_path: "/etc/via/config",
+      listeners: [
+        {":80", first.as(Via::Configuration::Validated?)},
+        {":443", second.as(Via::Configuration::Validated?)},
+      ],
+      debug: false
+    )
+
+    text = output.to_s
+    text.should contain("→ listening  :80\n")
+    text.should contain("→ listening  :443 (TLS)\n")
+    text.should contain("→ routes     2\n")
+  end
+
   it "summarizes direct response targets" do
     config = Via::Configuration::Validated.new(
       Via::Configuration::ListenAddress.new("0.0.0.0", 8080),

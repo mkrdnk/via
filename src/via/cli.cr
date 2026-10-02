@@ -67,45 +67,65 @@ module Via
         return 2
       end
 
-      model = Configuration::Loader.new(path).load
-      validator = Configuration::Validator.new(model)
-      listen = validator.validate_listen
-      state = Runtime::State.new(error, debug, log_level_override)
-      tls_enabled = false
-      tls = nil
-      validated = nil
-
+      models = Configuration::Loader.new(path).load_all
+      validators = models.map { |model| Configuration::Validator.new(model) }
+      listens = validators.map(&.validate_listen)
+      reject_duplicate_listens(listens)
+      states = [] of Runtime::State
+      validated_configs = [] of Configuration::Validated?
       begin
-        validated = validator.validate
-        state.apply(validated, source: path)
-        tls = validated.tls
-        tls_enabled = !tls.nil?
-      rescue ex : Configuration::Error
-        raise ex unless debug && model.tls.nil?
-        state.reject(path, ex)
+        models.each_with_index do |model, index|
+          state = Runtime::State.new(error, debug, log_level_override)
+          states << state
+          begin
+            validated = validators[index].validate
+            state.apply(validated, source: validated.config_file || path)
+            validated_configs << validated
+          rescue ex : Configuration::Error
+            raise ex unless debug && model.tls.nil?
+            state.reject(model.config_file || path, ex)
+            validated_configs << nil
+          end
+        end
+      rescue ex
+        states.each(&.close)
+        raise ex
       end
 
-      server = Server.new(listen, state, tls_enabled)
-      server.bind
-      Console::Banner.render(
+      servers = listens.map_with_index do |listen, index|
+        Server.new(listen, states[index], !models[index].tls.nil?)
+      end
+      server_group = ServerGroup.new(servers)
+      server_group.bind
+
+      banner_listeners = [] of Tuple(String, Configuration::Validated?)
+      models.each_with_index do |model, index|
+        banner_listeners << {model.listen.not_nil!, validated_configs[index]}
+      end
+      Console::Banner.render_many(
         output,
         config_path: path,
-        listen: model.listen.not_nil!,
-        config: validated,
+        listeners: banner_listeners,
         debug: debug,
         log_level_override: log_level_override
       )
 
-      reloader = Configuration::Reloader.new(path, listen, tls, state)
+      reloader = Configuration::GroupReloader.new(
+        path,
+        listens,
+        models.map { |model| !model.tls.nil? },
+        states
+      )
+      reloader.set_dependencies(models)
       reloader.start
 
-      Signal::INT.trap { server.close }
-      Signal::TERM.trap { server.close }
+      Signal::INT.trap { server_group.close }
+      Signal::TERM.trap { server_group.close }
       begin
-        server.listen
+        server_group.listen
       ensure
         reloader.stop
-        state.close
+        server_group.close
       end
       0
     rescue ex : Configuration::Error
@@ -114,6 +134,19 @@ module Via
     rescue ex : Socket::Error
       error.puts "Could not start Via: #{ex.message}"
       1
+    end
+
+    private def self.reject_duplicate_listens(
+      listens : Enumerable(Configuration::ListenAddress),
+    ) : Nil
+      seen = Set(Configuration::ListenAddress).new
+      listens.each do |listen|
+        unless seen.add?(listen)
+          raise Configuration::Error.new(
+            "Duplicate listen address: #{listen.host}:#{listen.port}"
+          )
+        end
+      end
     end
   end
 end

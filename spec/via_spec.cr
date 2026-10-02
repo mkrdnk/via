@@ -14,6 +14,59 @@ describe Via::Configuration::Model do
     ])
   end
 
+  it "applies top-level host to the single upstream route" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      host: Example.COM
+      proxy_pass: https://$host
+      YAML
+
+    route = config.validate.routes.first
+    route.host.should eq("example.com")
+    route.path.should eq("/")
+    route.upstream.should eq(URI.parse("https://example.com"))
+  end
+
+  it "requires a route host when proxy_pass uses $host" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      proxy_pass: https://$host
+      YAML
+
+    expect_raises(Via::ConfigurationError, "$host in proxy_pass requires a configured host") do
+      config.validate
+    end
+  end
+
+  it "rejects a variable as the configured host" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      host: $host
+      proxy_pass: https://$host
+      YAML
+
+    expect_raises(Via::ConfigurationError, "Invalid host") do
+      config.validate
+    end
+  end
+
+  it "brackets IPv6 hosts when expanding $host in upstream URLs" do
+    top_level = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      host: "[::1]"
+      proxy_pass: https://$host
+      YAML
+    nested = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - host: "[::1]"
+          proxy_pass: https://$host
+      YAML
+
+    top_level.validate.routes.first.upstream.should eq(URI.parse("https://[::1]"))
+    nested.validate.routes.first.upstream.should eq(URI.parse("https://[::1]"))
+  end
+
   it "loads logging configuration" do
     config = Via::Config.from_yaml <<-YAML
       listen: ":8080"
@@ -176,18 +229,73 @@ describe Via::Configuration::Model do
     end
   end
 
-  it "requires one listen declaration across directory fragments" do
+  it "loads multiple listeners from a configuration directory" do
     with_temp_directory do |directory|
       File.write(File.join(directory, "one.yaml"), <<-YAML)
         listen: ":8080"
+        host: first.example.com
         proxy_pass: http://localhost:3000
         YAML
       File.write(File.join(directory, "two.yaml"), <<-YAML)
         listen: ":8081"
+        proxy_pass: http://localhost:4000
         YAML
 
-      expect_raises(Via::ConfigurationError, "declare listen exactly once") do
-        Via::ConfigLoader.new(directory).load
+      configs = Via::ConfigLoader.new(directory).load_all.map(&.validate)
+      configs.map(&.listen).should eq([
+        Via::ListenAddress.new("0.0.0.0", 8080),
+        Via::ListenAddress.new("0.0.0.0", 8081),
+      ])
+      configs.map(&.config_file).should eq([
+        File.join(directory, "one.yaml"),
+        File.join(directory, "two.yaml"),
+      ])
+      configs[0].routes.first.host.should eq("first.example.com")
+      configs[1].routes.first.upstream.should eq(URI.parse("http://localhost:4000"))
+    end
+  end
+
+  it "merges equivalent spellings of one listen address" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "one.yaml"), <<-YAML)
+        listen: ":8080"
+        routes:
+          - path: /api
+            proxy_pass: http://localhost:3000
+        YAML
+      File.write(File.join(directory, "two.yaml"), <<-YAML)
+        listen: "0.0.0.0:8080"
+        routes:
+          - path: /
+            proxy_pass: http://localhost:4000
+        YAML
+
+      configs = Via::ConfigLoader.new(directory).load_all.map(&.validate)
+      configs.size.should eq(1)
+      configs.first.listen.should eq(Via::ListenAddress.new("0.0.0.0", 8080))
+      configs.first.config_file.should eq(directory)
+      configs.first.routes.map(&.path).should eq(["/api", "/"])
+    end
+  end
+
+  it "rejects ambiguous fragments when a directory has multiple listeners" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "http.yaml"), <<-YAML)
+        listen: ":8080"
+        proxy_pass: http://localhost:3000
+        YAML
+      File.write(File.join(directory, "https.yaml"), <<-YAML)
+        listen: ":8443"
+        proxy_pass: http://localhost:4000
+        YAML
+      File.write(File.join(directory, "routes.yaml"), <<-YAML)
+        routes:
+          - path: /shared
+            proxy_pass: http://localhost:5000
+        YAML
+
+      expect_raises(Via::ConfigurationError, "Every YAML file must declare listen") do
+        Via::ConfigLoader.new(directory).load_all
       end
     end
   end
@@ -557,6 +665,63 @@ describe Via::Runtime::State do
     end
   end
 
+  it "reloads every configured listener without allowing topology changes" do
+    first_upstream = HTTP::Server.new { |context| context.response << "first-group-config" }
+    second_upstream = HTTP::Server.new { |context| context.response << "second-group-config" }
+
+    with_server(first_upstream) do |first_address|
+      with_server(second_upstream) do |second_address|
+        with_temp_directory do |directory|
+          first_path = File.join(directory, "first.yaml")
+          second_path = File.join(directory, "second.yaml")
+          File.write(first_path, <<-YAML)
+            listen: "127.0.0.1:18080"
+            proxy_pass: http://#{first_address}
+            YAML
+          File.write(second_path, <<-YAML)
+            listen: "127.0.0.1:18081"
+            proxy_pass: http://#{first_address}
+            YAML
+
+          models = Via::ConfigLoader.new(directory).load_all
+          configs = models.map(&.validate)
+          states = configs.map do |config|
+            state = Via::RuntimeState.new(IO::Memory.new)
+            state.apply(config)
+            state
+          end
+          proxy = Via::Server.new(Via::ListenAddress.new("127.0.0.1", 0), states[0])
+          proxy_address = proxy.bind
+          spawn proxy.listen
+          reloader = Via::Configuration::GroupReloader.new(
+            directory,
+            configs.map(&.listen),
+            [false, false],
+            states
+          )
+
+          begin
+            HTTP::Client.get("http://#{proxy_address}/").body.should eq("first-group-config")
+            File.write(first_path, <<-YAML)
+              listen: "127.0.0.1:18080"
+              proxy_pass: http://#{second_address}
+              YAML
+            reloader.reload.should be_true
+            HTTP::Client.get("http://#{proxy_address}/").body.should eq("second-group-config")
+
+            File.delete(second_path)
+            reloader.reload.should be_false
+            HTTP::Client.get("http://#{proxy_address}/").body.should eq("second-group-config")
+          ensure
+            reloader.stop
+            proxy.close
+            states[1].close
+          end
+        end
+      end
+    end
+  end
+
   it "shows diagnostics in debug mode and recovers after a valid config" do
     upstream = HTTP::Server.new { |context| context.response << "working" }
 
@@ -605,6 +770,39 @@ describe Via::Runtime::State do
         HTTP::Client.get("http://#{address}/").body.should eq("unchanged")
       ensure
         proxy.close
+      end
+    end
+  end
+end
+
+describe Via::ServerGroup do
+  it "serves independent configurations on multiple listeners" do
+    first_upstream = HTTP::Server.new { |context| context.response << "first-listener" }
+    second_upstream = HTTP::Server.new { |context| context.response << "second-listener" }
+
+    with_server(first_upstream) do |first_upstream_address|
+      with_server(second_upstream) do |second_upstream_address|
+        first_config = Via::ValidatedConfig.new(
+          Via::ListenAddress.new("127.0.0.1", 0),
+          [Via::Route.new(nil, "/", URI.parse("http://#{first_upstream_address}"))]
+        )
+        second_config = Via::ValidatedConfig.new(
+          Via::ListenAddress.new("127.0.0.1", 0),
+          [Via::Route.new(nil, "/", URI.parse("http://#{second_upstream_address}"))]
+        )
+        group = Via::ServerGroup.new([
+          Via::Server.new(first_config, IO::Memory.new),
+          Via::Server.new(second_config, IO::Memory.new),
+        ])
+        addresses = group.bind
+        spawn group.listen
+
+        begin
+          HTTP::Client.get("http://#{addresses[0]}/").body.should eq("first-listener")
+          HTTP::Client.get("http://#{addresses[1]}/").body.should eq("second-listener")
+        ensure
+          group.close
+        end
       end
     end
   end

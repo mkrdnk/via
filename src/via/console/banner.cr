@@ -18,13 +18,40 @@ module Via::Console
       debug : Bool,
       log_level_override : Logging::Level? = nil,
     ) : Nil
+      render_many(
+        output,
+        config_path: config_path,
+        listeners: [{listen, config}],
+        debug: debug,
+        log_level_override: log_level_override
+      )
+    end
+
+    def render_many(
+      output : IO,
+      *,
+      config_path : String,
+      listeners : Array(Tuple(String, Configuration::Validated?)),
+      debug : Bool,
+      log_level_override : Logging::Level? = nil,
+    ) : Nil
       logo(output)
       output << "    via " << Via::VERSION << "\n\n"
 
       row(output, "config", config_path)
-      row(output, "listening", listening_value(listen, config))
-      logging(output, config, debug, log_level_override)
-      targets(output, config)
+      listeners.each do |listen, config|
+        row(output, "listening", listening_value(listen, config))
+      end
+
+      configs = [] of Configuration::Validated
+      listeners.each do |_, config|
+        configs << config if config
+      end
+      configs.each { |config| logging(output, config, debug, log_level_override) }
+      targets(output, configs)
+      if listeners.any? { |_, config| config.nil? }
+        row(output, "state", "configuration error")
+      end
       row(output, "mode", "debug") if debug
       output << "\nready\n"
     end
@@ -65,13 +92,11 @@ module Via::Console
       end
     end
 
-    private def targets(output : IO, config : Configuration::Validated?) : Nil
-      unless config
-        row(output, "state", "configuration error")
-        return
-      end
-
-      routes = config.routes
+    private def targets(
+      output : IO,
+      configs : Enumerable(Configuration::Validated),
+    ) : Nil
+      routes = configs.flat_map(&.routes)
       row(output, "routes", routes.size.to_s) if routes.size > 1
 
       upstreams = routes.compact_map(&.upstream).uniq
