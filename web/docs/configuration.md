@@ -38,9 +38,8 @@ never select an arbitrary upstream.
 
 ## Logging
 
-Operational logs go to standard error at `INFO` level by default. Set
-`log_file` to append them to a file and `log_level` to control the minimum
-recorded level:
+Operational logs go to stderr at `INFO` level by default. Set `log_file` to
+append them to a file and `log_level` to change the minimum severity:
 
 ```yaml
 listen: ":8000"
@@ -49,16 +48,8 @@ log_level: INFO
 proxy_pass: http://localhost:3000
 ```
 
-Supported levels are `DEBUG`, `INFO`, `WARN`, and `ERROR`, matched
-case-insensitively. `WARNING` is accepted as an alias for `WARN`. Relative log
-paths are resolved from Via's working directory. The parent directory must
-already exist and be writable.
-
-Via reopens the configured file and applies level changes during hot reload. If
-the new file cannot be opened, the replacement configuration is rejected and
-logging continues to the previous destination. The `--log-level` CLI option
-overrides this setting. Without that explicit override, `--debug` sets the
-effective level to `DEBUG`.
+Supported levels are `DEBUG`, `INFO`, `WARN`, and `ERROR`. See
+[Logs and troubleshooting](logging.md) for output, overrides, and request IDs.
 
 ## Routes
 
@@ -85,7 +76,29 @@ have exactly one target: `proxy_pass` or `static`. `host` is optional and
 page with a request ID. Statuses that prohibit response content (`204`, `205`,
 and `304`) remain empty.
 
-See [Routing](routing.md) for host matching, path matching, and precedence.
+### Path matching
+
+Paths use segment-aware prefix matching:
+
+- `/api` matches `/api` and `/api/users`;
+- `/api` does not match `/apix`.
+
+The longest matching path wins. A trailing slash in a configured path is
+normalized away, so `/api/` and `/api` describe the same route.
+
+Proxy routes forward the original path and query unchanged. Matching `/api`
+does not strip that prefix from the upstream request. Static routes remove
+their matched prefix when resolving a file.
+
+### Host matching
+
+Host matching is exact and case-insensitive. The port in the incoming `Host`
+header is ignored. For routes with equal paths, a matching host-specific route
+takes precedence over a route without `host`. A route without `host` is the
+fallback for any hostname.
+
+Duplicate normalized host/path pairs are rejected. If no route matches, Via
+responds with `404 Not Found`.
 
 ## Configuration directories
 
@@ -159,7 +172,7 @@ and `tls` may each be declared at most once. The normal validation rules are
 applied after merging. A file without `listen` is rejected when multiple
 listeners exist because Via cannot determine which listener should receive it.
 
-See [Debug mode and hot reload](hot-reload.md) for reload behavior.
+See [Reload configuration](hot-reload.md) for reload behavior.
 
 ## TLS
 

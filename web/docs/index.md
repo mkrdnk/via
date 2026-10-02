@@ -1,34 +1,32 @@
 # Via
 
-**Via is a tiny HTTP reverse proxy for when you only need `proxy_pass`.**
+**Via is a small, focused HTTP reverse proxy.**
 
-Via is a concurrent HTTP reverse proxy written in Crystal. Its current
-development milestone provides:
+Via accepts HTTP/1.1 traffic and sends it to an upstream selected by host and
+path. It can also terminate TLS, proxy WebSockets, and serve static files.
 
-- HTTP/1.1 reverse proxying;
-- host and path routing;
-- streaming request and response bodies;
-- downstream and upstream keep-alive;
-- reusable upstream connections;
-- atomic hot reload for file and directory configurations;
-- manual TLS termination with certificate reload;
-- static files with cache validators, ranges, and SPA fallback;
-- debug diagnostics for invalid configuration;
-- strict YAML configuration and validation;
-- built-in gateway error pages with request IDs.
+Start with one YAML file:
 
-Via deliberately stays focused. It does not currently provide caching,
-FastCGI, WAF functionality, scripting, plugins, complex rewrite rules, or
-advanced load-balancing algorithms.
+```yaml
+listen: ":8080"
+proxy_pass: http://localhost:3000
+```
 
-## Current status
+```sh
+via -c via.yaml
+```
 
-Via is under active development and is not yet a stable production release.
-WebSocket proxying, configurable headers, and upstream timeouts remain on the
-roadmap.
+Requests to `http://localhost:8080` now reach
+`http://localhost:3000`.
 
-Start with [Getting started](getting-started.md), then see
-[Configuration and routing](configuration.md) for route matching behavior and
-[Proxy behavior](proxy-behavior.md) for forwarding semantics. See
-[Error pages and request IDs](errors.md) for failure behavior and
-[Debug mode and hot reload](hot-reload.md) for the configuration workflow.
+## Where to go next
+
+- [Install and run Via](getting-started.md)
+- [Configure listeners, routes, and matching](configuration.md)
+- [Proxy HTTP and WebSockets](proxying.md)
+- [Enable TLS](tls.md)
+- [Run Via as a service](service.md)
+- [Use logs to diagnose failures](logging.md)
+
+Via intentionally does not provide caching, FastCGI, WAF functionality,
+scripting, plugins, rewrite rules, or load balancing.

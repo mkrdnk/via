@@ -1,9 +1,32 @@
 # Getting started
 
-## Requirements
+## Install a release
 
-Via requires Crystal 1.21.1 or newer. A normal build also needs the OpenSSL
-development libraries used by Crystal's HTTPS client.
+Download the archive for your distribution from
+[GitHub Releases](https://github.com/mkrdnk/via/releases):
+
+```text
+via-VERSION-fedora43-x86_64.tar.gz
+via-VERSION-debian13-x86_64.tar.gz
+via-VERSION-ubuntu24.04-x86_64.tar.gz
+```
+
+Verify and unpack it:
+
+```sh
+sha256sum --check via-VERSION-DISTRIBUTION-x86_64.tar.gz.sha256
+tar -xzf via-VERSION-DISTRIBUTION-x86_64.tar.gz
+sudo install -m 0755 via-VERSION-DISTRIBUTION-x86_64/via /usr/local/bin/via
+via --version
+```
+
+Release binaries include TLS support and use the target distribution's system
+libraries.
+
+## Build from source
+
+Building requires Crystal 1.21.1 or newer and Shards. TLS builds also require
+OpenSSL development files.
 
 Fedora:
 
@@ -17,21 +40,14 @@ Debian or Ubuntu:
 sudo apt install libssl-dev pkg-config
 ```
 
-Verify the toolchain:
-
 ```sh
 make doctor
-```
-
-## Build
-
-```sh
 make release
+sudo install -m 0755 bin/via /usr/local/bin/via
 ```
 
-The binary is written to `bin/via`.
-
-For an HTTP-only binary on a machine without OpenSSL development libraries:
+Use an HTTP-only build only when TLS listeners and HTTPS upstreams are not
+needed:
 
 ```sh
 make release-http
@@ -63,5 +79,6 @@ via --help
 via --version
 ```
 
-Continue with [Configuration and routing](configuration.md) to configure
-multiple upstreams.
+Continue with [Configuration](configuration.md) to add routes, TLS, logging, or
+multiple listeners. For a long-running installation, see
+[Run as a service](service.md).

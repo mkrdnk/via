@@ -27,8 +27,9 @@ The summary includes one `listening` row per listener. Multiple-route
 configurations show the route count and each unique proxy or static target.
 TLS and debug mode are marked explicitly.
 
-The banner is written to stdout. Structured operational records are written to
-stderr by default or to the configured `log_file`; see [Logging](logging.md).
+The banner is written to stdout. Operational records are written to stderr by
+default or to the configured `log_file`; see
+[Logs and troubleshooting](logging.md).
 
 ## Options
 
@@ -53,9 +54,9 @@ via --debug -c config.yaml
 Debug mode shows configuration diagnostics in the browser and adds request,
 routing, and upstream details to logs. It overrides the configured `log_level`
 with `DEBUG` unless `--log-level` provides an explicit CLI override. See
-[Debug mode and hot reload](hot-reload.md).
+[Reload configuration](hot-reload.md).
 
 ## Exit behavior
 
 Configuration and listener errors produce a non-zero exit status. `SIGINT` and
-`SIGTERM` stop all listeners and retire their active runtime generations.
+`SIGTERM` stop all listeners gracefully.

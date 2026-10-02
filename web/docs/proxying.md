@@ -1,4 +1,4 @@
-# Proxy behavior
+# Proxying and WebSockets
 
 Via acts as an HTTP intermediary rather than forwarding every byte of the
 original HTTP message unchanged.
@@ -43,15 +43,45 @@ framing instead of forwarding the original chunks.
 
 End-to-end request and response headers are otherwise preserved.
 
+## WebSockets
+
+WebSocket proxying is automatic for routes with an HTTP or HTTPS upstream. No
+route-specific option is required:
+
+```yaml
+routes:
+  - path: /socket
+    proxy_pass: http://localhost:3000
+```
+
+Via recognizes an HTTP/1.1 `GET` request as a WebSocket handshake when it
+contains both `Upgrade: websocket` and the `Upgrade` token in `Connection`. It
+then:
+
+1. forwards the handshake with the normal `Host`, `X-Forwarded-*`, and
+   `X-Request-ID` policy;
+2. preserves `Sec-WebSocket-*` headers, including extension and subprotocol
+   negotiation;
+3. returns the upstream `101 Switching Protocols` response;
+4. relays traffic in both directions until either connection closes.
+
+Because Via relays the upgraded stream without decoding WebSocket frames, text,
+binary, continuation, ping, pong, and close frames pass through unchanged.
+Negotiated extensions are transparent as well.
+
+An upstream HTTP rejection such as `401 Unauthorized` is returned as a normal
+HTTP response, including its body. A connection or handshake failure before a
+response produces `502 Bad Gateway`. Downstream TLS termination and HTTPS
+upstreams work with WebSockets in the same way as ordinary requests; use an
+HTTP-only build only when neither side requires TLS.
+
 ## Body streaming
 
-Request bodies are passed to the upstream client as an `IO`; Via does not read
-the complete upload before forwarding it. Response bodies are copied through a
-fixed-size buffer and begin flowing to the client before the upstream response
-is complete.
+Via does not read a complete upload or download into memory before forwarding
+it. Request and response bodies begin flowing as soon as data is available.
 
-`Content-Length` is preserved when it is known and validated by the Crystal
-HTTP transport. Bodies without a known length use HTTP/1.1 chunked framing.
+`Content-Length` is preserved when it is known and valid. Bodies without a
+known length use HTTP/1.1 chunked framing.
 
 If the downstream client disconnects, Via stops the transfer and discards the
 affected upstream connection. If an upstream disconnects before returning a
@@ -63,3 +93,8 @@ longer be replaced.
 
 Via forwards upstream redirect statuses and `Location` headers unchanged. It
 does not rewrite absolute or relative redirect targets.
+
+## Limitations
+
+Via does not currently provide configurable request or response header rules,
+upstream timeouts, retries, or load balancing.

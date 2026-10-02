@@ -9,24 +9,17 @@ extra_css:
 
 nav:
   - Overview: index.md
-  - Guide:
-      - Getting started: getting-started.md
+  - Install and run: getting-started.md
+  - Configure:
       - Configuration: configuration.md
-      - Routing: routing.md
-      - CLI: cli.md
-      - Running as a service: service.md
-      - TLS: tls.md
+      - Proxying and WebSockets: proxying.md
       - Static files: static-files.md
-  - Operations:
-      - Debug mode and hot reload: hot-reload.md
-      - Logging: logging.md
-      - Error pages and request IDs: errors.md
-      - Releases: releases.md
-      - GitHub Pages deployment: deployment.md
-  - Internals:
-      - Proxy behavior: proxy-behavior.md
-      - Architecture: architecture.md
-  - Development and benchmarking: development.md
+      - TLS: tls.md
+  - Operate:
+      - Command line: cli.md
+      - Run as a service: service.md
+      - Reload configuration: hot-reload.md
+      - Logs and troubleshooting: logging.md
 
 theme:
   name: readthedocs

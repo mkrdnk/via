@@ -17,6 +17,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -->
 
+## 0.3.0 - [unreleased]
+
+### Added
+
+- Transparent WebSocket proxying over HTTP and HTTPS upstreams, including
+  subprotocols, extensions, bidirectional frame relay, and ordinary HTTP
+  rejection responses.
+
+### Changed
+
+- Restructured the documentation around installation, configuration, proxying,
+  and operations; removed maintainer-only architecture, development, release,
+  and website deployment pages from the user guide.
+
+---
+
 ## 0.2.0 - 2026-10-02
 
 ### Added

@@ -28,24 +28,20 @@ TLS termination.
 ## Certificate reload
 
 Changing `tls.cert` or `tls.key` triggers the normal debounced configuration
-reload. Via creates a complete replacement OpenSSL server context before
-publishing the configuration.
-
-Each newly accepted connection snapshots the current context:
+reload. Via loads and validates the replacement files before applying them:
 
 - existing TLS connections continue with their established session;
 - new connections use the replacement certificate;
-- a certificate or key loading error keeps the previous context in production;
+- a certificate or key loading error keeps the previous certificate active;
 - debug mode enters diagnostic state after a reload error.
 
 Enabling or disabling TLS changes the listener transport and therefore
 requires restarting Via. Changing `listen` also requires a restart.
 
-## Current scope
+## Limitations
 
-Via currently supports one certificate context for the listener. SNI-based
-multiple certificates and ACME automation are intentionally outside this
-milestone.
+Via supports one certificate and key pair per listener. SNI-based multiple
+certificates and ACME automation are not supported.
 
 OpenSSL development libraries are required for a normal build. Use
 `make release-http` only when TLS support and HTTPS upstreams are not needed.
