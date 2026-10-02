@@ -1,6 +1,6 @@
 # Via
 
-![via logo](docs/assets/via-logo.svg)
+![via logo](web/docs/assets/via-logo.svg)
 
 **Via is a tiny HTTP reverse proxy for when you only need `proxy_pass`.**
 
@@ -46,17 +46,17 @@ make release-http
 
 ## Documentation
 
-- [Getting started](docs/getting-started.md)
-- [Configuration](docs/configuration.md)
-- [Routing](docs/routing.md)
-- [CLI](docs/cli.md)
-- [Proxy behavior](docs/proxy-behavior.md)
-- [Error pages and request IDs](docs/errors.md)
-- [Debug mode and hot reload](docs/hot-reload.md)
-- [TLS](docs/tls.md)
-- [Static files](docs/static-files.md)
-- [Architecture](docs/architecture.md)
-- [Development and benchmarking](docs/development.md)
+- [Getting started](web/docs/getting-started.md)
+- [Configuration](web/docs/configuration.md)
+- [Routing](web/docs/routing.md)
+- [CLI](web/docs/cli.md)
+- [Proxy behavior](web/docs/proxy-behavior.md)
+- [Error pages and request IDs](web/docs/errors.md)
+- [Debug mode and hot reload](web/docs/hot-reload.md)
+- [TLS](web/docs/tls.md)
+- [Static files](web/docs/static-files.md)
+- [Architecture](web/docs/architecture.md)
+- [Development and benchmarking](web/docs/development.md)
 
 Via is under active development. WebSocket proxying, configurable headers, and
 upstream timeouts are planned but not yet available.

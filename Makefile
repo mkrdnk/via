@@ -60,18 +60,18 @@ format-check:
 
 docs:
 	rm -rf site
-	$(MKDOCS) build --strict
+	$(MKDOCS) build --strict --config-file web/mkdocs.yml
 	cp web/index.html site/index.html
 	cp web/styles.css site/styles.css
 	mkdir -p site/assets
-	cp docs/assets/favicon.svg docs/assets/site.css docs/assets/via-logo.svg site/assets/
+	cp web/docs/assets/favicon.svg web/docs/assets/site.css web/docs/assets/via-logo.svg site/assets/
 	cp web/CNAME web/.nojekyll site/
 
 docs-serve: docs build-http
-	./bin/via -c .github/pages/via.yaml
+	./bin/via -c web/via.yaml
 
 pages-smoke: docs build-http
-	sh ./scripts/pages-smoke.sh
+	sh ./web/pages-smoke.sh
 
 check: format-check test docs
 

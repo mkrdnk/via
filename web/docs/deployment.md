@@ -37,7 +37,7 @@ The landing page and shared branding assets remain at the site root. The
 verified Actions artifact assembled from that branch.
 
 The smoke-test configuration is
-`.github/pages/via.yaml`:
+`web/via.yaml`:
 
 ```yaml
 listen: "127.0.0.1:8080"

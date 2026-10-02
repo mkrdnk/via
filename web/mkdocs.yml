@@ -1,6 +1,6 @@
 site_name: Via
 site_url: https://via.makridenko.com/docs/
-site_dir: site/docs
+site_dir: ../site/docs
 repo_name: GitHub
 repo_url: https://github.com/mkrdnk/via
 

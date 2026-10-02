@@ -32,7 +32,7 @@ make docs-serve
 # http://localhost:8000/docs/
 ```
 
-The preview server is Via itself, using `.github/pages/via.yaml`. Run the
+The preview server is Via itself, using `web/via.yaml`. Run the
 non-interactive deployment smoke test with:
 
 ```sh

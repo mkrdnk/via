@@ -85,14 +85,14 @@ jobs:
           fi
 
           mike deploy \
-            --config-file "$SOURCE_DIR/mkdocs.yml" \
+            --config-file "$SOURCE_DIR/web/mkdocs.yml" \
             --branch gh-pages \
             --deploy-prefix docs \
             --alias-type redirect \
             --update-aliases \
             "$VERSION" latest
           mike set-default \
-            --config-file "$SOURCE_DIR/mkdocs.yml" \
+            --config-file "$SOURCE_DIR/web/mkdocs.yml" \
             --branch gh-pages \
             --deploy-prefix docs \
             latest
@@ -108,9 +108,9 @@ jobs:
           rm -rf "$pages_dir/assets"
           mkdir "$pages_dir/assets"
           cp \
-            "$SOURCE_DIR/docs/assets/favicon.svg" \
-            "$SOURCE_DIR/docs/assets/site.css" \
-            "$SOURCE_DIR/docs/assets/via-logo.svg" \
+            "$SOURCE_DIR/web/docs/assets/favicon.svg" \
+            "$SOURCE_DIR/web/docs/assets/site.css" \
+            "$SOURCE_DIR/web/docs/assets/via-logo.svg" \
             "$pages_dir/assets/"
 
           git -C "$pages_dir" add \
@@ -130,7 +130,7 @@ jobs:
         env:
           DOCS_PREFIX: ${{ steps.versioned.outputs.docs_prefix }}
           VIA_BIN: ${{ steps.source.outputs.directory }}/bin/via
-        run: sh scripts/pages-smoke.sh
+        run: sh web/pages-smoke.sh
 
       - name: Preserve generated documentation versions
         run: git push origin gh-pages
