@@ -11,7 +11,9 @@ module Via::Configuration
       routes = build_routes
       reject_duplicate_routes(routes)
       tls = validate_tls
-      Validated.new(listen, routes, tls)
+      log_file = validate_log_file
+      log_level = validate_log_level
+      Validated.new(listen, routes, tls, log_file, log_level)
     end
 
     def validate_listen : ListenAddress
@@ -26,6 +28,27 @@ module Via::Configuration
       validate_tls_file(tls.cert, "tls.cert")
       validate_tls_file(tls.key, "tls.key")
       tls
+    end
+
+    def validate_log_file : String?
+      return unless path = @config.log_file
+
+      if path.strip.empty?
+        raise Error.new("log_file must not be empty")
+      end
+
+      path
+    end
+
+    def validate_log_level : Logging::Level?
+      return unless value = @config.log_level
+      if level = Logging::Level.parse_config(value)
+        return level
+      end
+
+      raise Error.new(
+        "Invalid log_level: #{value} (expected DEBUG, INFO, WARN, or ERROR)"
+      )
     end
 
     private def build_routes : Array(Routing::Route)

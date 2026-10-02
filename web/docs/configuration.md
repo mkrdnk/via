@@ -24,6 +24,30 @@ proxy_pass: http://localhost:3000
 - an unquoted integer from `200` through `599`, which returns that status
   directly without contacting an upstream.
 
+## Logging
+
+Operational logs go to standard error at `INFO` level by default. Set
+`log_file` to append them to a file and `log_level` to control the minimum
+recorded level:
+
+```yaml
+listen: ":8000"
+log_file: /var/log/via.log
+log_level: INFO
+proxy_pass: http://localhost:3000
+```
+
+Supported levels are `DEBUG`, `INFO`, `WARN`, and `ERROR`, matched
+case-insensitively. `WARNING` is accepted as an alias for `WARN`. Relative log
+paths are resolved from Via's working directory. The parent directory must
+already exist and be writable.
+
+Via reopens the configured file and applies level changes during hot reload. If
+the new file cannot be opened, the replacement configuration is rejected and
+logging continues to the previous destination. The `--log-level` CLI option
+overrides this setting. Without that explicit override, `--debug` sets the
+effective level to `DEBUG`.
+
 ## Routes
 
 Use `routes` to select different upstreams by host and path:
@@ -86,9 +110,10 @@ routes:
     proxy_pass: http://localhost:3000
 ```
 
-Across a directory, `listen` must be declared exactly once and top-level
-`proxy_pass` at most once. Route arrays from all fragments are concatenated.
-The normal validation rules are applied after merging.
+Across a directory, `listen` must be declared exactly once. `log_file`,
+`log_level`, and top-level `proxy_pass` may each be declared at most once.
+Route arrays from all fragments are concatenated. The normal validation rules
+are applied after merging.
 
 See [Debug mode and hot reload](hot-reload.md) for reload behavior.
 

@@ -16,12 +16,14 @@ module Via::Console
       listen : String,
       config : Configuration::Validated?,
       debug : Bool,
+      log_level_override : Logging::Level? = nil,
     ) : Nil
       logo(output)
       output << "    via " << Via::VERSION << "\n\n"
 
       row(output, "config", config_path)
       row(output, "listening", listening_value(listen, config))
+      logging(output, config, debug, log_level_override)
       targets(output, config)
       row(output, "mode", "debug") if debug
       output << "\nready\n"
@@ -42,6 +44,25 @@ module Via::Console
       config : Configuration::Validated?,
     ) : String
       config.try(&.tls) ? "#{listen} (TLS)" : listen
+    end
+
+    private def logging(
+      output : IO,
+      config : Configuration::Validated?,
+      debug : Bool,
+      log_level_override : Logging::Level?,
+    ) : Nil
+      return unless config
+
+      config.log_file.try { |path| row(output, "log file", path) }
+      if level = log_level_override
+        row(output, "log level", level.label)
+      elsif configured_level = config.log_level
+        level = debug ? Logging::Level::Debug : configured_level
+        row(output, "log level", level.label)
+      elsif config.log_file
+        row(output, "log level", debug ? "debug" : "info")
+      end
     end
 
     private def targets(output : IO, config : Configuration::Validated?) : Nil

@@ -11,12 +11,51 @@ Strings are quoted and escaped. Numbers, booleans, and `null` remain directly
 machine-readable. A mutex keeps records from concurrent fibers on separate
 lines.
 
-The startup banner is written to stdout. Operational records are written to
-stderr, which keeps logs suitable for systemd, containers, and shell
+The startup banner is written to stdout. By default, operational records are
+written to stderr, which keeps logs suitable for systemd, containers, and shell
 redirection:
 
 ```sh
 via -c config.yaml >startup.log 2>via.log
+```
+
+To append operational records directly to a file, configure:
+
+```yaml
+log_file: /var/log/via.log
+log_level: INFO
+```
+
+`log_level` is the minimum recorded severity:
+
+| Level | Records |
+| --- | --- |
+| `DEBUG` | Debug, informational, warning, and error records |
+| `INFO` | Informational, warning, and error records |
+| `WARN` | Warning and error records |
+| `ERROR` | Error records only |
+
+Level names are case-insensitive, and `WARNING` is an alias for `WARN`. The
+default is `INFO`. Relative `log_file` paths use Via's working directory, and
+the parent directory must already exist. Via opens files in append mode and
+flushes every record.
+
+Both settings can change during hot reload. Via opens a replacement destination
+before switching to it; if opening fails, the replacement configuration is
+rejected and the previous destination remains active.
+
+The effective level uses the following precedence:
+
+1. `--log-level`;
+2. `--debug`, which selects `DEBUG`;
+3. `log_level` from YAML;
+4. the default `INFO`.
+
+For example, this keeps browser diagnostics enabled while recording only
+errors:
+
+```sh
+via --debug --log-level ERROR -c config.yaml
 ```
 
 ## Request completion
@@ -71,7 +110,8 @@ All request-related events carry the same request ID returned in
 
 ## Debug mode
 
-`--debug` adds:
+Unless `--log-level` is present, `--debug` sets the effective level to `DEBUG`
+and adds:
 
 - `request.started`;
 - `routing.selected`;

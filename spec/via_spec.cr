@@ -14,6 +14,39 @@ describe Via::Configuration::Model do
     ])
   end
 
+  it "loads logging configuration" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      log_file: /var/log/via.log
+      log_level: WARNING
+      proxy_pass: http://localhost:3000
+      YAML
+
+    validated = config.validate
+    validated.log_file.should eq("/var/log/via.log")
+    validated.log_level.should eq(Via::Logging::Level::Warn)
+  end
+
+  it "rejects invalid logging configuration" do
+    invalid_level = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      log_level: TRACE
+      proxy_pass: http://localhost:3000
+      YAML
+    expect_raises(Via::ConfigurationError, "Invalid log_level") do
+      invalid_level.validate
+    end
+
+    empty_file = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      log_file: " "
+      proxy_pass: http://localhost:3000
+      YAML
+    expect_raises(Via::ConfigurationError, "log_file must not be empty") do
+      empty_file.validate
+    end
+  end
+
   it "loads and normalizes route configuration" do
     config = Via::Config.from_yaml <<-YAML
       listen: "127.0.0.1:8080"
@@ -578,10 +611,19 @@ describe Via::Runtime::State do
 end
 
 describe Via::CLI do
-  it "documents debug mode in CLI help" do
+  it "documents logging options in CLI help" do
     output = IO::Memory.new
     Via::CLI.run(["--help"], output, IO::Memory.new).should eq(0)
     output.to_s.should contain("--debug")
+    output.to_s.should contain("--log-level")
+  end
+
+  it "rejects an invalid CLI log level" do
+    error = IO::Memory.new
+
+    Via::CLI.run(["--log-level", "TRACE"], IO::Memory.new, error).should eq(2)
+    error.to_s.should contain("Invalid log level: TRACE")
+    error.to_s.should contain("Expected DEBUG, INFO, WARN, or ERROR.")
   end
 end
 

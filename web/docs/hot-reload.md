@@ -29,6 +29,11 @@ replacement context before swapping runtime state, and new TLS connections use
 the new certificate. TLS cannot be enabled or disabled without restarting the
 listener.
 
+`log_file` and `log_level` may also change during reload. Via opens a new log
+file before switching destinations. If that fails, Via keeps both the previous
+runtime generation and the previous logging destination. A `--log-level`
+command-line override remains in effect across reloads.
+
 ## Production behavior
 
 Without `--debug`, an invalid reload is written to the error log and Via keeps

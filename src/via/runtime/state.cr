@@ -8,7 +8,11 @@ module Via::Runtime
       @tls_context : OpenSSL::SSL::Context::Server?
     {% end %}
 
-    def initialize(log : IO = STDERR, @debug : Bool = false)
+    def initialize(
+      log : IO = STDERR,
+      @debug : Bool = false,
+      @log_level_override : Logging::Level? = nil,
+    )
       @mutex = Mutex.new
       @logger = Logging::Logger.new(log, @debug)
       @generation = nil
@@ -27,6 +31,14 @@ module Via::Runtime
       tls_context = TLS::ContextBuilder.build(config.tls)
       scheme = config.tls ? "https" : "http"
       replacement = Generation.new(config.routes, @logger, scheme)
+      level = @log_level_override ||
+              (@debug ? Logging::Level::Debug : config.log_level || Logging::Level::Info)
+      begin
+        @logger.configure(config.log_file, level)
+      rescue ex
+        replacement.retire
+        raise ex
+      end
       previous = @mutex.synchronize do
         old = @generation
         @generation = replacement
@@ -113,6 +125,7 @@ module Via::Runtime
         old
       end
       previous.try(&.retire)
+      @logger.close
     end
 
     private def render_diagnostic(

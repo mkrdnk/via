@@ -3,6 +3,7 @@ require "http/server"
 require "yaml"
 
 require "./via/configuration/error"
+require "./via/logging/level"
 require "./via/configuration/model"
 require "./via/routing/route"
 require "./via/configuration/validated"

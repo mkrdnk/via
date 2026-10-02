@@ -26,19 +26,21 @@ Multiple-route configurations show the route count and each unique proxy or
 static target. TLS and debug mode are marked explicitly.
 
 The banner is written to stdout. Structured operational records are written to
-stderr; see [Logging](logging.md).
+stderr by default or to the configured `log_file`; see [Logging](logging.md).
 
 ## Options
 
 ```text
 -c PATH, --config=PATH  Path to a YAML file or configuration directory
 --debug                 Show diagnostics and verbose proxy logs
+--log-level=LEVEL       Override the configured log level
 --version               Print the Via version
 -h, --help              Print command help
 ```
 
 `-c` is currently required. Via does not yet select `/etc/via/config/`
-implicitly.
+implicitly. `--log-level` accepts `DEBUG`, `INFO`, `WARN`, or `ERROR`
+case-insensitively; `WARNING` is an alias for `WARN`.
 
 ## Debug mode
 
@@ -47,7 +49,8 @@ via --debug -c config.yaml
 ```
 
 Debug mode shows configuration diagnostics in the browser and adds request,
-routing, and upstream details to logs. See
+routing, and upstream details to logs. It overrides the configured `log_level`
+with `DEBUG` unless `--log-level` provides an explicit CLI override. See
 [Debug mode and hot reload](hot-reload.md).
 
 ## Exit behavior

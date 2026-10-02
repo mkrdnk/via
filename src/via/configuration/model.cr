@@ -42,6 +42,8 @@ module Via::Configuration
     include YAML::Serializable::Strict
 
     getter listen : String?
+    getter log_file : String?
+    getter log_level : String?
 
     @[YAML::Field(key: "proxy_pass")]
     getter proxy_pass : ProxyPass?
@@ -51,6 +53,8 @@ module Via::Configuration
 
     def initialize(
       @listen : String? = nil,
+      @log_file : String? = nil,
+      @log_level : String? = nil,
       @proxy_pass : ProxyPass? = nil,
       @routes : Array(Route)? = nil,
       @tls : TLS? = nil,

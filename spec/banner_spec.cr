@@ -66,4 +66,60 @@ describe Via::Console::Banner do
 
     output.to_s.should contain("→ response   403")
   end
+
+  it "shows configured logging settings" do
+    config = Via::Configuration::Validated.new(
+      Via::Configuration::ListenAddress.new("0.0.0.0", 8080),
+      [
+        Via::Routing::Route.new(
+          nil,
+          "/",
+          URI.parse("http://localhost:3000")
+        ),
+      ],
+      log_file: "/var/log/via.log",
+      log_level: Via::Logging::Level::Warn
+    )
+    output = IO::Memory.new
+
+    Via::Console::Banner.render(
+      output,
+      config_path: "config.yaml",
+      listen: ":8080",
+      config: config,
+      debug: false
+    )
+
+    text = output.to_s
+    text.should contain("→ log file   /var/log/via.log")
+    text.should contain("→ log level  warn")
+  end
+
+  it "shows the CLI log level override" do
+    config = Via::Configuration::Validated.new(
+      Via::Configuration::ListenAddress.new("0.0.0.0", 8080),
+      [
+        Via::Routing::Route.new(
+          nil,
+          "/",
+          URI.parse("http://localhost:3000")
+        ),
+      ],
+      log_level: Via::Logging::Level::Debug
+    )
+    output = IO::Memory.new
+
+    Via::Console::Banner.render(
+      output,
+      config_path: "config.yaml",
+      listen: ":8080",
+      config: config,
+      debug: true,
+      log_level_override: Via::Logging::Level::Error
+    )
+
+    text = output.to_s
+    text.should contain("→ log level  error")
+    text.should contain("→ mode       debug")
+  end
 end

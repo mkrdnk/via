@@ -5,6 +5,7 @@ module Via
     def self.run(args = ARGV, output : IO = STDOUT, error : IO = STDERR) : Int32
       config_path = nil
       debug = false
+      log_level_override = nil.as(Logging::Level?)
       requested_exit = false
       exit_code = 0
 
@@ -15,6 +16,16 @@ module Via
         end
         options.on("--debug", "Show diagnostics and verbose proxy logs") do
           debug = true
+        end
+        options.on("--log-level=LEVEL", "Override the configured log level") do |value|
+          if level = Logging::Level.parse_config(value)
+            log_level_override = level
+          else
+            error.puts "Invalid log level: #{value}"
+            error.puts "Expected DEBUG, INFO, WARN, or ERROR."
+            requested_exit = true
+            exit_code = 2
+          end
         end
         options.on("--version", "Show Via version") do
           output.puts "via #{VERSION}"
@@ -59,7 +70,7 @@ module Via
       model = Configuration::Loader.new(path).load
       validator = Configuration::Validator.new(model)
       listen = validator.validate_listen
-      state = Runtime::State.new(error, debug)
+      state = Runtime::State.new(error, debug, log_level_override)
       tls_enabled = false
       tls = nil
       validated = nil
@@ -81,7 +92,8 @@ module Via
         config_path: path,
         listen: model.listen.not_nil!,
         config: validated,
-        debug: debug
+        debug: debug,
+        log_level_override: log_level_override
       )
 
       reloader = Configuration::Reloader.new(path, listen, tls, state)

@@ -4,5 +4,7 @@ module Via::Configuration
   record Validated,
     listen : ListenAddress,
     routes : Array(Routing::Route),
-    tls : TLS? = nil
+    tls : TLS? = nil,
+    log_file : String? = nil,
+    log_level : Logging::Level? = nil
 end

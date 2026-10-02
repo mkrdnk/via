@@ -23,6 +23,8 @@ module Via::Configuration
 
       fragments = files.map { |file| Model.load(file) }
       listens = fragments.compact_map(&.listen)
+      log_files = fragments.compact_map(&.log_file)
+      log_levels = fragments.compact_map(&.log_level)
       proxy_passes = fragments.compact_map(&.proxy_pass)
       routes = fragments.flat_map { |fragment| fragment.routes || [] of Route }
       tls_configs = fragments.compact_map(&.tls)
@@ -30,6 +32,18 @@ module Via::Configuration
       if listens.size > 1
         raise Error.new(
           "Configuration directory must declare listen exactly once, found #{listens.size}"
+        )
+      end
+
+      if log_files.size > 1
+        raise Error.new(
+          "Configuration directory must declare log_file at most once, found #{log_files.size}"
+        )
+      end
+
+      if log_levels.size > 1
+        raise Error.new(
+          "Configuration directory must declare log_level at most once, found #{log_levels.size}"
         )
       end
 
@@ -47,6 +61,8 @@ module Via::Configuration
 
       Model.new(
         listen: listens.first?,
+        log_file: log_files.first?,
+        log_level: log_levels.first?,
         proxy_pass: proxy_passes.first?,
         routes: routes.empty? ? nil : routes,
         tls: tls_configs.first?
