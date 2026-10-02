@@ -12,7 +12,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/via -c /etc/via/config/
+ExecStart=/usr/local/bin/via run
 Restart=on-failure
 User=via
 Group=via
@@ -21,7 +21,8 @@ Group=via
 WantedBy=multi-user.target
 ```
 
-The configuration directory can be split into lexically ordered YAML
+This uses the default `/etc/via/` configuration directory. The directory can be
+split into lexically ordered YAML
 fragments. Via watches those files and applies valid changes atomically, so
 routine configuration edits do not require a service restart.
 

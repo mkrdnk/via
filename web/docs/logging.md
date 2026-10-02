@@ -70,7 +70,7 @@ error page.
 Run with debug logging:
 
 ```sh
-via --debug -c via.yaml
+via run --debug -c via.yaml
 ```
 
 Debug records show the incoming request, selected route, upstream, and upstream

@@ -24,7 +24,7 @@ proxy_pass: http://localhost:3000
 ```
 
 ```sh
-via -c via.yaml
+via run -c via.yaml
 ```
 
 To build from source, install Crystal 1.21.1 or newer, Shards, and the OpenSSL

@@ -1,15 +1,22 @@
 # CLI
 
-Run Via with one YAML file:
+Via uses the `run` command to start the proxy. Without `-c`, it loads YAML
+configuration from `/etc/via/`:
 
 ```sh
-via -c config.yaml
+via run
+```
+
+Override that default with one YAML file:
+
+```sh
+via run -c config.yaml
 ```
 
 Or with a directory of configuration fragments:
 
 ```sh
-via -c /etc/via/config/
+via run -c /etc/via/config/
 ```
 
 Via prints one startup summary after all configured listeners are bound:
@@ -31,24 +38,53 @@ The banner is written to stdout. Operational records are written to stderr by
 default or to the configured `log_file`; see
 [Logs and troubleshooting](logging.md).
 
-## Options
+## Commands
 
 ```text
--c PATH, --config=PATH  Path to a YAML file or configuration directory
---debug                 Show diagnostics and verbose proxy logs
---log-level=LEVEL       Override the configured log level
+via run [options]    Start the proxy
+via check [options]  Validate configuration without starting the proxy
+```
+
+Both commands accept:
+
+```text
+-c PATH, --config=PATH  Configuration file or directory (default: /etc/via/)
 --version               Print the Via version
 -h, --help              Print command help
 ```
 
-`-c` is currently required. Via does not yet select `/etc/via/config/`
-implicitly. `--log-level` accepts `DEBUG`, `INFO`, `WARN`, or `ERROR`
-case-insensitively; `WARNING` is an alias for `WARN`.
+`via run` additionally accepts:
+
+```text
+--debug            Show diagnostics and verbose proxy logs
+--log-level=LEVEL  Override the configured log level
+```
+
+`--log-level` accepts `DEBUG`, `INFO`, `WARN`, or `ERROR` case-insensitively;
+`WARNING` is an alias for `WARN`.
+
+## Validate configuration
+
+Check the default `/etc/via/` configuration:
+
+```sh
+via check
+```
+
+Or check a specific file or directory:
+
+```sh
+via check -c config.yaml
+```
+
+A valid configuration exits with status `0` and is not bound to any listening
+address. Invalid YAML, routes, listeners, static targets, or TLS files produce a
+configuration error and a non-zero exit status.
 
 ## Debug mode
 
 ```sh
-via --debug -c config.yaml
+via run --debug -c config.yaml
 ```
 
 Debug mode shows configuration diagnostics in the browser and adds request,

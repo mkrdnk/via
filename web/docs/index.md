@@ -13,7 +13,7 @@ proxy_pass: http://localhost:3000
 ```
 
 ```sh
-via -c via.yaml
+via run -c via.yaml
 ```
 
 Requests to `http://localhost:8080` now reach

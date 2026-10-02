@@ -65,7 +65,7 @@ proxy_pass: http://localhost:3000
 ## Run Via
 
 ```sh
-via -c via.yaml
+via run -c via.yaml
 ```
 
 Requests to `http://localhost:8080` are now proxied to
@@ -74,7 +74,8 @@ Requests to `http://localhost:8080` are now proxied to
 The CLI also exposes:
 
 ```sh
-via --debug -c via.yaml
+via check -c via.yaml
+via run --debug -c via.yaml
 via --help
 via --version
 ```

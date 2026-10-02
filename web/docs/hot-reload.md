@@ -3,9 +3,11 @@
 Via watches the file or directory passed to `-c`:
 
 ```sh
-via -c via.yaml
-via -c /etc/via/config/
+via run -c via.yaml
+via run -c /etc/via/config/
 ```
+
+When `-c` is omitted, `via run` loads and watches `/etc/via/`.
 
 Saving a valid configuration applies it without restarting the process.
 Directory mode watches additions, removals, renames, and updates of `.yaml` and
@@ -43,7 +45,7 @@ new connections use the replacement certificate.
 Start debug mode while developing a configuration:
 
 ```sh
-via --debug -c via.yaml
+via run --debug -c via.yaml
 ```
 
 After an invalid edit, Via shows a `503 Service Unavailable` diagnostic page
