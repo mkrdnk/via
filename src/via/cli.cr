@@ -14,11 +14,19 @@ module Via
       when "check"
         check_configuration(command_args, output, error)
       when "-h", "--help"
-        output.puts help
-        0
+        if command_args.empty?
+          output.puts help
+          0
+        else
+          reject_unexpected_arguments(command_args, error, help)
+        end
       when "--version"
-        output.puts "via #{VERSION}"
-        0
+        if command_args.empty?
+          output.puts "via #{VERSION}"
+          0
+        else
+          reject_unexpected_arguments(command_args, error, help)
+        end
       when nil
         error.puts "A command is required."
         error.puts help
@@ -211,9 +219,18 @@ module Via
       validators = models.map { |model| Configuration::Validator.new(model) }
       listens = validators.map(&.validate_listen)
       reject_duplicate_listens(listens)
-      validators.each do |validator|
-        validated = validator.validate
-        TLS::ContextBuilder.build(validated.tls)
+      logger = Logging::Logger.new(error)
+      begin
+        validators.each do |validator|
+          validated = validator.validate
+          TLS::ContextBuilder.build(validated.tls)
+          logger.configure(
+            validated.log_file,
+            validated.log_level || Logging::Level::Info
+          )
+        end
+      ensure
+        logger.close
       end
 
       output.puts "Configuration is valid: #{config_path}"
@@ -234,6 +251,16 @@ module Via
 
       Run "via COMMAND --help" for command options.
       TEXT
+    end
+
+    private def self.reject_unexpected_arguments(
+      arguments : Array(String),
+      error : IO,
+      usage : String,
+    ) : Int32
+      error.puts "Unexpected argument#{arguments.size == 1 ? "" : "s"}: #{arguments.join(' ')}"
+      error.puts usage
+      2
     end
 
     private def self.reject_duplicate_listens(

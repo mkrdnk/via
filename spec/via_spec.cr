@@ -844,17 +844,44 @@ describe Via::CLI do
     error.to_s.should contain("A command is required.")
   end
 
-  it "checks a valid configuration without starting a listener" do
+  it "rejects arguments after top-level options" do
+    error = IO::Memory.new
+
+    Via::CLI.run(["--version", "extra"], IO::Memory.new, error).should eq(2)
+    error.to_s.should contain("Unexpected argument: extra")
+  end
+
+  it "routes config options to the run command" do
     with_temp_directory do |directory|
       config_path = File.join(directory, "via.yaml")
       File.write(config_path, <<-YAML)
-        listen: ":8080"
+        listen: invalid
+        proxy_pass: http://localhost:3000
+        YAML
+
+      ["-c", "--config"].each do |option|
+        error = IO::Memory.new
+
+        Via::CLI.run(["run", option, config_path], IO::Memory.new, error).should eq(1)
+        error.to_s.should contain("Configuration error: Invalid listen address")
+      end
+    end
+  end
+
+  it "checks a valid configuration without starting a listener" do
+    with_temp_directory do |directory|
+      listener = TCPServer.new("127.0.0.1", 0)
+      config_path = File.join(directory, "via.yaml")
+      File.write(config_path, <<-YAML)
+        listen: "127.0.0.1:#{listener.local_address.port}"
         proxy_pass: http://localhost:3000
         YAML
       output = IO::Memory.new
 
       Via::CLI.run(["check", "-c", config_path], output, IO::Memory.new).should eq(0)
       output.to_s.should contain("Configuration is valid: #{config_path}")
+    ensure
+      listener.try(&.close)
     end
   end
 
@@ -869,6 +896,21 @@ describe Via::CLI do
 
       Via::CLI.run(["check", "--config", config_path], IO::Memory.new, error).should eq(1)
       error.to_s.should contain("Configuration error: Invalid listen address")
+    end
+  end
+
+  it "reports a log destination that cannot be opened" do
+    with_temp_directory do |directory|
+      config_path = File.join(directory, "via.yaml")
+      File.write(config_path, <<-YAML)
+        listen: ":8080"
+        log_file: #{directory}
+        proxy_pass: http://localhost:3000
+        YAML
+      error = IO::Memory.new
+
+      Via::CLI.run(["check", "-c", config_path], IO::Memory.new, error).should eq(1)
+      error.to_s.should contain("Configuration error: Could not open log_file")
     end
   end
 end
