@@ -1,9 +1,30 @@
 require "./spec_helper"
 
+private class YieldingLogIO < IO
+  def initialize
+    @memory = IO::Memory.new
+  end
+
+  def read(slice : Bytes) : Int32
+    0
+  end
+
+  def write(slice : Bytes) : Nil
+    midpoint = slice.size // 2
+    @memory.write(slice[0, midpoint])
+    Fiber.yield
+    @memory.write(slice[midpoint, slice.size - midpoint])
+  end
+
+  def to_s : String
+    @memory.to_s
+  end
+end
+
 describe Via::Logging::Logger do
   it "writes structured key-value records and escapes strings" do
     output = IO::Memory.new
-    logger = Via::Logging::Logger.new(output)
+    logger = Via::Logging::Logger.new(output, config_file: "/etc/via/config.yaml")
 
     logger.info(
       "request.completed",
@@ -16,6 +37,7 @@ describe Via::Logging::Logger do
     line = output.to_s
     line.should match(/\Atime=\d{4}-\d{2}-\d{2}T/)
     line.should contain(" level=info event=request.completed")
+    line.should contain(%( config_file="/etc/via/config.yaml"))
     line.should contain(%( request_id="abc123"))
     line.should contain(" status=200")
     line.should contain(%( path="/search?q=\\"via\\""))
@@ -118,13 +140,14 @@ describe Via::Logging::Logger do
         log_level: Via::Logging::Level::Debug
       )
 
-      state.apply(config)
-      state.reject("via.yaml", Via::ConfigurationError.new("broken reload"))
+      state.apply(config, source: "/etc/via/config.yaml")
+      state.reject("/etc/via/config.yaml", Via::ConfigurationError.new("broken reload"))
       state.close
 
       content = File.read(path)
       content.should_not contain("event=config.applied")
       content.should contain("level=error event=config.rejected")
+      content.should contain(%(config_file="/etc/via/config.yaml"))
     end
   end
 
@@ -146,6 +169,31 @@ describe Via::Logging::Logger do
     lines.each { |line| line.should contain(" event=concurrent.test ") }
   end
 
+  it "serializes records from separate loggers sharing an output" do
+    output = YieldingLogIO.new
+    first = Via::Logging::Logger.new(output, config_file: "first.yaml")
+    second = Via::Logging::Logger.new(output, config_file: "second.yaml")
+    done = Channel(Nil).new(20)
+
+    10.times do |index|
+      spawn do
+        first.info("shared.test", index: index)
+        done.send(nil)
+      end
+      spawn do
+        second.info("shared.test", index: index)
+        done.send(nil)
+      end
+    end
+    20.times { done.receive }
+
+    lines = output.to_s.lines
+    lines.size.should eq(20)
+    lines.each do |line|
+      line.should match(/\Atime=.* event=shared\.test config_file="(?:first|second)\.yaml" index=\d+\z/)
+    end
+  end
+
   it "records request completion without leaking query parameters" do
     upstream = HTTP::Server.new { |context| context.response << "ok" }
 
@@ -161,7 +209,9 @@ describe Via::Logging::Logger do
           ),
         ]
       )
-      server = Via::Server.new(config, log)
+      state = Via::RuntimeState.new(log)
+      state.apply(config, source: "/etc/via/config.yaml")
+      server = Via::Server.new(config.listen, state)
       address = server.bind
       spawn server.listen
 
@@ -169,6 +219,7 @@ describe Via::Logging::Logger do
         HTTP::Client.get("http://#{address}/items?token=secret")
         records = log.to_s
         records.should contain("event=request.completed")
+        records.should contain(%(config_file="/etc/via/config.yaml"))
         records.should contain(%(path="/items"))
         records.should_not contain("token=secret")
         records.should contain("status=200")

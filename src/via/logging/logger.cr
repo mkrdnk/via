@@ -1,14 +1,24 @@
 module Via::Logging
   class Logger
+    @@write_mutex = Mutex.new
+
     @output : IO
     @level : Level
     @owns_output : Bool
 
-    def initialize(@base_output : IO = STDERR, debug_enabled : Bool = false)
+    def initialize(
+      @base_output : IO = STDERR,
+      debug_enabled : Bool = false,
+      @config_file : String? = nil,
+    )
       @mutex = Mutex.new
       @output = @base_output
       @level = debug_enabled ? Level::Debug : Level::Info
       @owns_output = false
+    end
+
+    def config_file=(path : String?) : Nil
+      @mutex.synchronize { @config_file = path }
     end
 
     def debug(event : String, **fields) : Nil
@@ -69,14 +79,20 @@ module Via::Logging
           io << "time=" << Time.utc.to_rfc3339(fraction_digits: 3)
           io << " level=" << level.label
           io << " event=" << event
+          if config_file = @config_file
+            io << " config_file="
+            append_value(io, config_file)
+          end
           fields.each do |key, value|
             io << ' ' << key << '='
             append_value(io, value)
           end
         end
 
-        @output.puts(line)
-        @output.flush
+        @@write_mutex.synchronize do
+          @output.puts(line)
+          @output.flush
+        end
       end
     rescue IO::Error
       # Logging must never interrupt request processing.

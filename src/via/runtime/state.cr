@@ -28,6 +28,7 @@ module Via::Runtime
       source : String? = nil,
       reloaded : Bool = false,
     ) : Nil
+      @logger.config_file = source if source
       tls_context = TLS::ContextBuilder.build(config.tls)
       scheme = config.tls ? "https" : "http"
       replacement = Generation.new(config.routes, @logger, scheme)
@@ -67,6 +68,7 @@ module Via::Runtime
     {% end %}
 
     def reject(source : String, error : Exception) : Nil
+      @logger.config_file = source
       keeping_previous = @mutex.synchronize do
         previous = !@generation.nil?
         if @debug

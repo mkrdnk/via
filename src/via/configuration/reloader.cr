@@ -40,7 +40,7 @@ module Via::Configuration
         raise Error.new("TLS cannot be enabled or disabled during hot reload")
       end
 
-      @state.apply(config, source: @path, reloaded: true)
+      @state.apply(config, source: config.config_file || @path, reloaded: true)
       true
     rescue ex : Error
       @state.reject(@path, ex)
