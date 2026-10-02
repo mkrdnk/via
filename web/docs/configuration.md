@@ -24,6 +24,18 @@ proxy_pass: http://localhost:3000
 - an unquoted integer from `200` through `599`, which returns that status
   directly without contacting an upstream.
 
+The short form may include `host`. This limits the route to that request host:
+
+```yaml
+listen: ":80"
+host: example.com
+proxy_pass: https://$host
+```
+
+`$host` in `proxy_pass` is replaced with the configured `host` during
+validation. It is rejected when the route has no `host`, so request input can
+never select an arbitrary upstream.
+
 ## Logging
 
 Operational logs go to standard error at `INFO` level by default. Set
@@ -110,10 +122,42 @@ routes:
     proxy_pass: http://localhost:3000
 ```
 
-Across a directory, `listen` must be declared exactly once. `log_file`,
-`log_level`, and top-level `proxy_pass` may each be declared at most once.
-Route arrays from all fragments are concatenated. The normal validation rules
-are applied after merging.
+When a directory contains one `listen` value, all files remain fragments of
+that listener: `listen` may be repeated, files without it are accepted, and
+route arrays are concatenated.
+
+A directory may also define multiple listeners. In that mode every YAML file
+must declare `listen`; files with the same value are merged into one listener,
+while distinct values run concurrently with independent routes and TLS:
+
+```text
+/etc/via/config/
+├── 10-http.yaml
+└── 20-https.yaml
+```
+
+`10-http.yaml`:
+
+```yaml
+listen: ":80"
+host: example.com
+proxy_pass: https://$host
+```
+
+`20-https.yaml`:
+
+```yaml
+listen: ":443"
+tls:
+  cert: /etc/via/cert.pem
+  key: /etc/via/key.pem
+proxy_pass: http://localhost:3000
+```
+
+Within each listener, `host`, `log_file`, `log_level`, top-level `proxy_pass`,
+and `tls` may each be declared at most once. The normal validation rules are
+applied after merging. A file without `listen` is rejected when multiple
+listeners exist because Via cannot determine which listener should receive it.
 
 See [Debug mode and hot reload](hot-reload.md) for reload behavior.
 

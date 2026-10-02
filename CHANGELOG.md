@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output, severity filtering, and hot reload support.
 - `--log-level` CLI override with support for `DEBUG`, `INFO`, `WARN`, and
   `ERROR`.
+- Multiple independent HTTP and TLS listeners in configuration directories.
+- Top-level `host` routing for the short `proxy_pass` form, including safe
+  `$host` substitution from the configured route host.
+- `config_file` context on every operational log record.
 
 ### Changed
 

@@ -18,12 +18,12 @@ Via::HTTP           request IDs, error pages, forwarding header policy
 Via::Proxy          upstream transport and connection pooling
 Via::Runtime        atomic generations and diagnostic state
 Via::Static         filesystem containment and file serving
-Via::TLS            contexts and reloadable TLS listener
+Via::TLS            contexts and reloadable TLS listeners
 ```
 
-The source tree mirrors these namespaces under `src/via/`. `Via::Server` and
-`Via::CLI` remain at the root because they compose modules into listener and
-process lifecycles.
+The source tree mirrors these namespaces under `src/via/`. `Via::CLI`,
+`Via::Server`, and `Via::ServerGroup` remain at the root because they compose
+modules into listener and process lifecycles.
 
 This keeps configuration, routing, transport, and lifecycle decisions
 independent and directly testable.
@@ -50,9 +50,10 @@ bounded idle pool and can reuse their keep-alive connections.
 
 ## Configuration generations
 
-A validated configuration creates an immutable proxy generation containing its
-router and upstream connection pools. Hot reload builds the replacement before
-acquiring the runtime state lock, then swaps one generation reference.
+A validated listener configuration creates an immutable proxy generation
+containing its router and upstream connection pools. Each listener has its own
+runtime state. Hot reload validates every listener configuration first, then
+swaps each listener's generation.
 
 The previous generation is retired rather than closed immediately. It tracks
 active requests and closes its idle upstream clients once its last request

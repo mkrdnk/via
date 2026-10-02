@@ -12,18 +12,20 @@ Or with a directory of configuration fragments:
 via -c /etc/via/config/
 ```
 
-Via prints one startup summary after the listener is bound:
+Via prints one startup summary after all configured listeners are bound:
 
 ```text
-→ config     /etc/via/config.yaml
-→ listening  :8080
+→ config     /etc/via/config/
+→ listening  :80
+→ listening  :443 (TLS)
 → upstream   localhost:3000
 
 ready
 ```
 
-Multiple-route configurations show the route count and each unique proxy or
-static target. TLS and debug mode are marked explicitly.
+The summary includes one `listening` row per listener. Multiple-route
+configurations show the route count and each unique proxy or static target.
+TLS and debug mode are marked explicitly.
 
 The banner is written to stdout. Structured operational records are written to
 stderr by default or to the configured `log_file`; see [Logging](logging.md).
@@ -56,4 +58,4 @@ with `DEBUG` unless `--log-level` provides an explicit CLI override. See
 ## Exit behavior
 
 Configuration and listener errors produce a non-zero exit status. `SIGINT` and
-`SIGTERM` stop the listener and retire the active runtime generation.
+`SIGTERM` stop all listeners and retire their active runtime generations.

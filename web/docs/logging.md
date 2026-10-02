@@ -4,12 +4,18 @@ Via writes operational logs as structured `key=value` records, one event per
 line:
 
 ```text
-time=2026-10-01T13:26:16.666Z level=info event=request.completed request_id="fbd06c3469d1c645432441b7816b52ad" client="127.0.0.1" method="GET" host="example.com" path="/api/users" target="proxy" route_path="/api" upstream="http://127.0.0.1:8000" status=200 request_bytes=null response_bytes=421 duration_ms=4.691 failure=null
+time=2026-10-01T13:26:16.666Z level=info event=request.completed config_file="config.yaml" request_id="fbd06c3469d1c645432441b7816b52ad" client="127.0.0.1" method="GET" host="example.com" path="/api/users" target="proxy" route_path="/api" upstream="http://127.0.0.1:8000" status=200 request_bytes=null response_bytes=421 duration_ms=4.691 failure=null
 ```
 
 Strings are quoted and escaped. Numbers, booleans, and `null` remain directly
 machine-readable. A mutex keeps records from concurrent fibers on separate
 lines.
+
+Every record includes `config_file` to identify the listener configuration
+responsible for request, routing, upstream, and reload records. With `-c FILE`,
+the value is that file. For a configuration directory, it is the listener's
+YAML file when that listener comes from one file. If several fragments are
+merged into one listener, the value is the directory path.
 
 The startup banner is written to stdout. By default, operational records are
 written to stderr, which keeps logs suitable for systemd, containers, and shell
