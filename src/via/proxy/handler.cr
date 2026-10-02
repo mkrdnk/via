@@ -78,6 +78,25 @@ module Via::Proxy
       end
 
       route_path = route.path
+      if response_status = route.response_status
+        target = "response"
+        @logger.debug(
+          "routing.selected",
+          request_id: request_id,
+          target: target,
+          route_host: route.host,
+          route_path: route.path,
+          status: response_status
+        )
+        Via::HTTP::ErrorPages.render(
+          response,
+          ::HTTP::Status.new(response_status),
+          request_id,
+          head: request.method == "HEAD"
+        )
+        return
+      end
+
       if static_target = route.static_target
         target = "static"
         @logger.debug(

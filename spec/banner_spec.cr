@@ -46,4 +46,24 @@ describe Via::Console::Banner do
     text.should contain("→ state      configuration error")
     text.should contain("→ mode       debug")
   end
+
+  it "summarizes direct response targets" do
+    config = Via::Configuration::Validated.new(
+      Via::Configuration::ListenAddress.new("0.0.0.0", 8080),
+      [
+        Via::Routing::Route.new(nil, "/admin", nil, nil, 403),
+      ]
+    )
+    output = IO::Memory.new
+
+    Via::Console::Banner.render(
+      output,
+      config_path: "config.yaml",
+      listen: ":8080",
+      config: config,
+      debug: false
+    )
+
+    output.to_s.should contain("→ response   403")
+  end
 end

@@ -61,6 +61,9 @@ module Via::Console
 
       static_roots = routes.compact_map(&.static_target).map(&.root).uniq
       static_roots.each { |root| row(output, "static", root) }
+
+      response_statuses = routes.compact_map(&.response_status).uniq
+      response_statuses.each { |status| row(output, "response", status.to_s) }
     end
   end
 end

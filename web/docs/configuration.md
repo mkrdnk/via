@@ -18,8 +18,11 @@ proxy_pass: http://localhost:3000
 - `HOST:PORT`;
 - `[IPv6]:PORT`.
 
-`proxy_pass` must be an HTTP or HTTPS URL without a path, query, fragment, or
-credentials.
+`proxy_pass` accepts either:
+
+- an HTTP or HTTPS URL without a path, query, fragment, or credentials; or
+- an unquoted integer from `200` through `599`, which returns that status
+  directly without contacting an upstream.
 
 ## Routes
 
@@ -35,11 +38,16 @@ routes:
 
   - path: /
     proxy_pass: http://localhost:3000
+
+  - path: /admin
+    proxy_pass: 403
 ```
 
 Top-level `proxy_pass` and `routes` are mutually exclusive. Every route must
 have exactly one target: `proxy_pass` or `static`. `host` is optional and
-`path` defaults to `/`.
+`path` defaults to `/`. A numeric `proxy_pass` renders Via's built-in status
+page with a request ID. Statuses that prohibit response content (`204`, `205`,
+and `304`) remain empty.
 
 See [Routing](routing.md) for host matching, path matching, and precedence.
 

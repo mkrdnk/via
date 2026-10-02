@@ -5,5 +5,6 @@ module Via::Routing
     host : String?,
     path : String,
     upstream : URI?,
-    static_target : StaticTarget? = nil
+    static_target : StaticTarget? = nil,
+    response_status : Int32? = nil
 end

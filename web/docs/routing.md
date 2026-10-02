@@ -50,9 +50,17 @@ routes:
   - path: /api
     proxy_pass: http://localhost:8000
 
+  - path: /admin
+    proxy_pass: 403
+
   - path: /
     static: ./dist
 ```
+
+An unquoted numeric `proxy_pass` from `200` through `599` returns that status
+with Via's built-in status page and does not contact an upstream. Responses
+whose status prohibits content (`204`, `205`, and `304`) remain empty. This is
+useful for denying access to a route or providing a fixed health response.
 
 See [Proxy behavior](proxy-behavior.md) and
 [Static files](static-files.md) for target-specific behavior.

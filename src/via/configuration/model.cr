@@ -21,6 +21,8 @@ module Via::Configuration
     end
   end
 
+  alias ProxyPass = String | Int32
+
   class Route
     include YAML::Serializable
     include YAML::Serializable::Strict
@@ -29,7 +31,7 @@ module Via::Configuration
     getter path : String = "/"
 
     @[YAML::Field(key: "proxy_pass")]
-    getter proxy_pass : String?
+    getter proxy_pass : ProxyPass?
 
     @[YAML::Field(key: "static")]
     getter static_config : String | Static | Nil
@@ -42,14 +44,14 @@ module Via::Configuration
     getter listen : String?
 
     @[YAML::Field(key: "proxy_pass")]
-    getter proxy_pass : String?
+    getter proxy_pass : ProxyPass?
 
     getter routes : Array(Route)?
     getter tls : TLS?
 
     def initialize(
       @listen : String? = nil,
-      @proxy_pass : String? = nil,
+      @proxy_pass : ProxyPass? = nil,
       @routes : Array(Route)? = nil,
       @tls : TLS? = nil,
     )

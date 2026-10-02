@@ -9,6 +9,10 @@ module Via::HTTP
         "Bad Request",
         "The request could not be understood."
       ),
+      ::HTTP::Status::FORBIDDEN => Definition.new(
+        "Forbidden",
+        "Access to this resource is forbidden."
+      ),
       ::HTTP::Status::NOT_FOUND => Definition.new(
         "Not Found",
         "The requested resource was not found."
@@ -36,8 +40,7 @@ module Via::HTTP
     }
 
     def self.body(status : ::HTTP::Status, request_id : String) : String
-      definition = DEFINITIONS[status]? ||
-                   raise ArgumentError.new("No error page for HTTP #{status.code}")
+      definition = DEFINITIONS[status]? || default_definition(status)
 
       document(status.code, definition.title, definition.message, request_id)
     end
@@ -69,17 +72,43 @@ module Via::HTTP
       additional_headers : ::HTTP::Headers? = nil,
     ) : Nil
       content = body(status, request_id)
+      content_forbidden = content_forbidden?(status)
       response.headers.clear
       response.status = status
-      response.content_type = "text/html; charset=utf-8"
-      response.content_length = content.bytesize
+      unless content_forbidden
+        response.content_type = "text/html; charset=utf-8"
+        response.content_length = content.bytesize
+      end
       response.headers["X-Request-ID"] = request_id
       additional_headers.try do |headers|
         headers.each do |name, values|
           values.each { |value| response.headers.add(name, value) }
         end
       end
-      response << content unless head
+      response << content unless head || content_forbidden
+    end
+
+    private def self.default_definition(status : ::HTTP::Status) : Definition
+      title = status.description || "HTTP Status"
+      message = if status.client_error?
+                  "The request could not be completed."
+                elsif status.server_error?
+                  "The server could not complete the request."
+                elsif status.redirection?
+                  "The request resulted in a redirect response."
+                else
+                  "The request completed with this status."
+                end
+
+      Definition.new(title, message)
+    end
+
+    private def self.content_forbidden?(status : ::HTTP::Status) : Bool
+      status.in?(
+        ::HTTP::Status::NO_CONTENT,
+        ::HTTP::Status::RESET_CONTENT,
+        ::HTTP::Status::NOT_MODIFIED
+      )
     end
 
     private def self.document(

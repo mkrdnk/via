@@ -31,6 +31,33 @@ describe Via::Configuration::Model do
     routes[1].host.should be_nil
   end
 
+  it "accepts an HTTP status as a proxy_pass target" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - path: /admin
+          proxy_pass: 403
+      YAML
+
+    route = config.validate.routes.first
+    route.upstream.should be_nil
+    route.static_target.should be_nil
+    route.response_status.should eq(403)
+  end
+
+  it "rejects non-final HTTP response statuses" do
+    {199, 600}.each do |status|
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        proxy_pass: #{status}
+        YAML
+
+      expect_raises(Via::ConfigurationError, "expected 200..599") do
+        config.validate
+      end
+    end
+  end
+
   it "rejects unknown fields" do
     expect_raises(YAML::ParseException) do
       Via::Config.from_yaml <<-YAML
@@ -272,6 +299,7 @@ describe Via::HTTP::ErrorPages do
   it "embeds status details, request ID, and favicon for every Via error" do
     statuses = {
       HTTP::Status::BAD_REQUEST,
+      HTTP::Status::FORBIDDEN,
       HTTP::Status::NOT_FOUND,
       HTTP::Status::METHOD_NOT_ALLOWED,
       HTTP::Status::RANGE_NOT_SATISFIABLE,
@@ -287,6 +315,15 @@ describe Via::HTTP::ErrorPages do
       body.should contain("Request ID: request-id")
       body.should contain("data:image/svg+xml;base64,")
     end
+  end
+
+  it "renders a generic page for configured status codes" do
+    body = Via::ErrorPages.body(HTTP::Status.new(599), "request-id")
+
+    body.should contain("599")
+    body.should contain("HTTP Status")
+    body.should contain("The server could not complete the request.")
+    body.should contain("Request ID: request-id")
   end
 end
 
@@ -709,6 +746,59 @@ describe Via::Proxy::Handler do
     headers.has_key?("Connection").should be_false
     headers.has_key?("Keep-Alive").should be_false
     headers.has_key?("X-Internal").should be_false
+  end
+
+  it "returns a configured status without contacting an upstream" do
+    upstream_requests = Atomic(Int32).new(0)
+    upstream = HTTP::Server.new do |context|
+      upstream_requests.add(1)
+      context.response << "upstream"
+    end
+
+    with_server(upstream) do |upstream_address|
+      routes = Via::Config.from_yaml(<<-YAML).validate.routes
+        listen: ":8080"
+        routes:
+          - path: /admin
+            proxy_pass: 403
+          - path: /empty
+            proxy_pass: 204
+          - path: /
+            proxy_pass: http://#{upstream_address}
+        YAML
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        routes
+      )
+      proxy = Via::Server.new(config, IO::Memory.new)
+      proxy_address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        denied = HTTP::Client.get("http://#{proxy_address}/admin/users")
+        denied.status.should eq(HTTP::Status::FORBIDDEN)
+        denied.headers["Content-Type"].should eq("text/html; charset=utf-8")
+        denied.body.should contain("<h1>403</h1>")
+        denied.body.should contain("<h2>Forbidden</h2>")
+        denied.body.should contain("Request ID: #{denied.headers["X-Request-ID"]}")
+        upstream_requests.get.should eq(0)
+
+        head = HTTP::Client.head("http://#{proxy_address}/admin")
+        head.status.should eq(HTTP::Status::FORBIDDEN)
+        head.body.should be_empty
+        head.headers["Content-Length"].should eq(denied.body.bytesize.to_s)
+
+        empty = HTTP::Client.get("http://#{proxy_address}/empty")
+        empty.status.should eq(HTTP::Status::NO_CONTENT)
+        empty.body.should be_empty
+
+        allowed = HTTP::Client.get("http://#{proxy_address}/")
+        allowed.body.should eq("upstream")
+        upstream_requests.get.should eq(1)
+      ensure
+        proxy.close
+      end
+    end
   end
 
   it "forwards method, path, query, headers, status, headers, and bodies" do

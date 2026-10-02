@@ -37,7 +37,7 @@ module Via::Configuration
       end
 
       if proxy_pass
-        return [Routing::Route.new(nil, "/", parse_upstream(proxy_pass))]
+        return [build_proxy_route(nil, "/", proxy_pass)]
       end
 
       unless route_configs && !route_configs.empty?
@@ -58,12 +58,40 @@ module Via::Configuration
           )
         end
 
+        host = parse_host(route.host, index)
+        path = parse_path(route.path, index)
+        if upstream
+          build_proxy_route(host, path, upstream, "routes[#{index}].proxy_pass")
+        else
+          Routing::Route.new(
+            host,
+            path,
+            nil,
+            parse_static(static_config.not_nil!, index)
+          )
+        end
+      end
+    end
+
+    private def build_proxy_route(
+      host : String?,
+      path : String,
+      value : ProxyPass,
+      field = "proxy_pass",
+    ) : Routing::Route
+      case value
+      when String
+        Routing::Route.new(host, path, parse_upstream(value, field))
+      when Int32
         Routing::Route.new(
-          parse_host(route.host, index),
-          parse_path(route.path, index),
-          upstream ? parse_upstream(upstream, "routes[#{index}].proxy_pass") : nil,
-          static_config ? parse_static(static_config, index) : nil
+          host,
+          path,
+          nil,
+          nil,
+          parse_response_status(value, field)
         )
+      else
+        raise "Unsupported proxy_pass value"
       end
     end
 
@@ -128,6 +156,14 @@ module Via::Configuration
       uri
     rescue URI::Error
       raise Error.new("Invalid upstream URL in #{field}: #{value}")
+    end
+
+    private def parse_response_status(value : Int32, field : String) : Int32
+      unless value.in?(200..599)
+        raise Error.new("Invalid response status in #{field}: #{value} (expected 200..599)")
+      end
+
+      value
     end
 
     private def parse_static(value : String | Static, route_index : Int32) : Routing::StaticTarget

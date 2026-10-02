@@ -3,9 +3,10 @@
 Via embeds its error pages in the executable. They do not depend on static
 assets or files installed next to the binary.
 
-The error page renderer supports:
+Via has specialized error-page messages for:
 
 - `400 Bad Request`;
+- `403 Forbidden`;
 - `404 Not Found`;
 - `405 Method Not Allowed`;
 - `416 Range Not Satisfiable`;
@@ -15,6 +16,9 @@ The error page renderer supports:
 
 `503` is reserved for temporarily unavailable runtime state, and `504` will be
 used by configurable upstream timeouts. Those conditions are not emitted yet.
+
+Routes with a numeric `proxy_pass` use the same page layout. Statuses without a
+specialized message use their standard HTTP description and a generic message.
 
 Error responses are self-contained HTML pages. The Via favicon is embedded in
 the binary and referenced through a data URI, so it works even when no static
