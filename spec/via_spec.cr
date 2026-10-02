@@ -809,19 +809,67 @@ describe Via::ServerGroup do
 end
 
 describe Via::CLI do
-  it "documents logging options in CLI help" do
+  it "documents commands in top-level help" do
     output = IO::Memory.new
+
     Via::CLI.run(["--help"], output, IO::Memory.new).should eq(0)
+
+    output.to_s.should contain("via COMMAND")
+    output.to_s.should contain("run")
+    output.to_s.should contain("check")
+  end
+
+  it "documents logging options and the default config path in run help" do
+    output = IO::Memory.new
+
+    Via::CLI.run(["run", "--help"], output, IO::Memory.new).should eq(0)
+
     output.to_s.should contain("--debug")
     output.to_s.should contain("--log-level")
+    output.to_s.should contain("/etc/via/")
   end
 
   it "rejects an invalid CLI log level" do
     error = IO::Memory.new
 
-    Via::CLI.run(["--log-level", "TRACE"], IO::Memory.new, error).should eq(2)
+    Via::CLI.run(["run", "--log-level", "TRACE"], IO::Memory.new, error).should eq(2)
     error.to_s.should contain("Invalid log level: TRACE")
     error.to_s.should contain("Expected DEBUG, INFO, WARN, or ERROR.")
+  end
+
+  it "requires a command" do
+    error = IO::Memory.new
+
+    Via::CLI.run([] of String, IO::Memory.new, error).should eq(2)
+    error.to_s.should contain("A command is required.")
+  end
+
+  it "checks a valid configuration without starting a listener" do
+    with_temp_directory do |directory|
+      config_path = File.join(directory, "via.yaml")
+      File.write(config_path, <<-YAML)
+        listen: ":8080"
+        proxy_pass: http://localhost:3000
+        YAML
+      output = IO::Memory.new
+
+      Via::CLI.run(["check", "-c", config_path], output, IO::Memory.new).should eq(0)
+      output.to_s.should contain("Configuration is valid: #{config_path}")
+    end
+  end
+
+  it "reports an invalid configuration from check" do
+    with_temp_directory do |directory|
+      config_path = File.join(directory, "via.yaml")
+      File.write(config_path, <<-YAML)
+        listen: invalid
+        proxy_pass: http://localhost:3000
+        YAML
+      error = IO::Memory.new
+
+      Via::CLI.run(["check", "--config", config_path], IO::Memory.new, error).should eq(1)
+      error.to_s.should contain("Configuration error: Invalid listen address")
+    end
   end
 end
 

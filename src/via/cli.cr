@@ -2,16 +2,50 @@ require "option_parser"
 
 module Via
   class CLI
+    DEFAULT_CONFIG_PATH = "/etc/via/"
+
     def self.run(args = ARGV, output : IO = STDOUT, error : IO = STDERR) : Int32
-      config_path = nil
+      command = args.first?
+      command_args = args.size > 1 ? args[1, args.size - 1] : [] of String
+
+      case command
+      when "run"
+        run_server(command_args, output, error)
+      when "check"
+        check_configuration(command_args, output, error)
+      when "-h", "--help"
+        output.puts help
+        0
+      when "--version"
+        output.puts "via #{VERSION}"
+        0
+      when nil
+        error.puts "A command is required."
+        error.puts help
+        2
+      else
+        error.puts "Unknown command: #{command}"
+        error.puts help
+        2
+      end
+    rescue ex : Configuration::Error
+      error.puts "Configuration error: #{ex.message}"
+      1
+    rescue ex : Socket::Error
+      error.puts "Could not start Via: #{ex.message}"
+      1
+    end
+
+    private def self.run_server(args : Array(String), output : IO, error : IO) : Int32
+      config_path = DEFAULT_CONFIG_PATH
       debug = false
       log_level_override = nil.as(Logging::Level?)
       requested_exit = false
       exit_code = 0
 
       parser = OptionParser.new do |options|
-        options.banner = "Usage: via -c CONFIG"
-        options.on("-c PATH", "--config=PATH", "Path to the YAML configuration") do |path|
+        options.banner = "Usage: via run [options]"
+        options.on("-c PATH", "--config=PATH", "Configuration file or directory (default: #{DEFAULT_CONFIG_PATH})") do |path|
           config_path = path
         end
         options.on("--debug", "Show diagnostics and verbose proxy logs") do
@@ -61,12 +95,7 @@ module Via
       parser.parse(args)
       return exit_code if requested_exit
 
-      unless path = config_path
-        error.puts "Configuration is required. Use -c PATH or --config=PATH."
-        error.puts parser
-        return 2
-      end
-
+      path = config_path
       models = Configuration::Loader.new(path).load_all
       validators = models.map { |model| Configuration::Validator.new(model) }
       listens = validators.map(&.validate_listen)
@@ -128,12 +157,83 @@ module Via
         server_group.close
       end
       0
-    rescue ex : Configuration::Error
-      error.puts "Configuration error: #{ex.message}"
-      1
-    rescue ex : Socket::Error
-      error.puts "Could not start Via: #{ex.message}"
-      1
+    end
+
+    private def self.check_configuration(
+      args : Array(String),
+      output : IO,
+      error : IO,
+    ) : Int32
+      config_path = DEFAULT_CONFIG_PATH
+      requested_exit = false
+      exit_code = 0
+
+      parser = OptionParser.new do |options|
+        options.banner = "Usage: via check [options]"
+        options.on("-c PATH", "--config=PATH", "Configuration file or directory (default: #{DEFAULT_CONFIG_PATH})") do |path|
+          config_path = path
+        end
+        options.on("--version", "Show Via version") do
+          output.puts "via #{VERSION}"
+          requested_exit = true
+        end
+        options.on("-h", "--help", "Show this help") do
+          output.puts options
+          requested_exit = true
+        end
+        options.invalid_option do |flag|
+          error.puts "Unknown option: #{flag}"
+          error.puts options
+          requested_exit = true
+          exit_code = 2
+        end
+        options.missing_option do |flag|
+          error.puts "Missing value for #{flag}"
+          error.puts options
+          requested_exit = true
+          exit_code = 2
+        end
+        options.unknown_args do |before_dash, after_dash|
+          arguments = before_dash + after_dash
+          next if arguments.empty?
+
+          error.puts "Unexpected argument#{arguments.size == 1 ? "" : "s"}: #{arguments.join(' ')}"
+          error.puts options
+          requested_exit = true
+          exit_code = 2
+        end
+      end
+
+      parser.parse(args)
+      return exit_code if requested_exit
+
+      models = Configuration::Loader.new(config_path).load_all
+      validators = models.map { |model| Configuration::Validator.new(model) }
+      listens = validators.map(&.validate_listen)
+      reject_duplicate_listens(listens)
+      validators.each do |validator|
+        validated = validator.validate
+        TLS::ContextBuilder.build(validated.tls)
+      end
+
+      output.puts "Configuration is valid: #{config_path}"
+      0
+    end
+
+    private def self.help : String
+      <<-TEXT
+      Usage: via COMMAND [options]
+
+      Commands:
+        run    Start Via (default configuration: #{DEFAULT_CONFIG_PATH})
+        check  Validate configuration without starting Via
+
+      Global options:
+        --version  Show Via version
+        -h, --help Show this help
+
+      Run "via COMMAND --help" for command options.
+      TEXT
     end
 
     private def self.reject_duplicate_listens(

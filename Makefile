@@ -41,10 +41,10 @@ release-http:
 	$(SHARDS) build --release --production --no-debug -Dwithout_openssl
 
 run: build
-	./bin/via -c $(CONFIG)
+	./bin/via run -c $(CONFIG)
 
 debug: build
-	./bin/via --debug -c $(CONFIG)
+	./bin/via run --debug -c $(CONFIG)
 
 test: check-openssl
 	$(CRYSTAL) spec
@@ -68,7 +68,7 @@ docs:
 	cp web/CNAME web/.nojekyll site/
 
 docs-serve: docs build-http
-	./bin/via -c web/via.yaml
+	./bin/via run -c web/via.yaml
 
 pages-smoke: docs build-http
 	sh ./web/pages-smoke.sh

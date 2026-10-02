@@ -4,7 +4,7 @@ set -eu
 log_file="${TMPDIR:-/tmp}/via-pages-smoke.log"
 docs_prefix="${DOCS_PREFIX:-/docs}"
 via_bin="${VIA_BIN:-./bin/via}"
-"$via_bin" -c web/via.yaml >"$log_file" 2>&1 &
+"$via_bin" run -c web/via.yaml >"$log_file" 2>&1 &
 via_pid=$!
 
 cleanup() {
