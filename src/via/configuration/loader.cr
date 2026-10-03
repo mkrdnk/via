@@ -57,6 +57,7 @@ module Via::Configuration
     private def merge_fragments(fragments : Array(Model)) : Model
       listens = fragments.compact_map(&.listen)
       hosts = fragments.compact_map(&.host)
+      debug_values = fragments.compact_map(&.debug)
       log_files = fragments.compact_map(&.log_file)
       log_levels = fragments.compact_map(&.log_level)
       proxy_passes = fragments.compact_map(&.proxy_pass)
@@ -76,6 +77,12 @@ module Via::Configuration
       if hosts.size > 1
         raise Error.new(
           "Listener fragments must declare host at most once, found #{hosts.size}"
+        )
+      end
+
+      if debug_values.size > 1
+        raise Error.new(
+          "Configuration directory must declare debug at most once, found #{debug_values.size}"
         )
       end
 
@@ -106,6 +113,7 @@ module Via::Configuration
       Model.new(
         listen: listens.first?,
         host: hosts.first?,
+        debug: debug_values.first?,
         log_file: log_files.first?,
         log_level: log_levels.first?,
         proxy_pass: proxy_passes.first?,

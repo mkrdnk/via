@@ -43,6 +43,7 @@ module Via::Configuration
 
     getter listen : String?
     getter host : String?
+    getter debug : Bool?
     getter log_file : String?
     getter log_level : String?
 
@@ -57,6 +58,7 @@ module Via::Configuration
 
     def initialize(
       @listen : String? = nil,
+      @debug : Bool? = nil,
       @log_file : String? = nil,
       @log_level : String? = nil,
       @proxy_pass : ProxyPass? = nil,

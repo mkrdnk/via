@@ -7,5 +7,6 @@ module Via::Configuration
     tls : TLS? = nil,
     log_file : String? = nil,
     log_level : Logging::Level? = nil,
-    config_file : String? = nil
+    config_file : String? = nil,
+    debug : Bool = false
 end

@@ -207,7 +207,8 @@ describe Via::Logging::Logger do
             "/",
             URI.parse("http://#{upstream_address}")
           ),
-        ]
+        ],
+        debug: true
       )
       state = Via::RuntimeState.new(log)
       state.apply(config, source: "/etc/via/config.yaml")
@@ -218,6 +219,7 @@ describe Via::Logging::Logger do
       begin
         HTTP::Client.get("http://#{address}/items?token=secret")
         records = log.to_s
+        records.should contain("level=debug event=request.started")
         records.should contain("event=request.completed")
         records.should contain(%(config_file="/etc/via/config.yaml"))
         records.should contain(%(path="/items"))

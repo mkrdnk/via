@@ -51,6 +51,19 @@ proxy_pass: http://localhost:3000
 Supported levels are `DEBUG`, `INFO`, `WARN`, and `ERROR`. See
 [Logs and troubleshooting](logging.md) for output, overrides, and request IDs.
 
+To enable diagnostics and verbose proxy logs for only this listener, set
+`debug: true`:
+
+```yaml
+listen: ":8000"
+debug: true
+proxy_pass: http://localhost:3000
+```
+
+This selects the `DEBUG` log level and shows configuration errors in the browser
+when Via can keep the listener running. In a directory with multiple listeners,
+other listeners remain in production mode.
+
 ## Routes
 
 Use `routes` to select different upstreams by host and path:
@@ -167,10 +180,11 @@ tls:
 proxy_pass: http://localhost:3000
 ```
 
-Within each listener, `host`, `log_file`, `log_level`, top-level `proxy_pass`,
-and `tls` may each be declared at most once. The normal validation rules are
-applied after merging. A file without `listen` is rejected when multiple
-listeners exist because Via cannot determine which listener should receive it.
+Within each listener, `host`, `debug`, `log_file`, `log_level`, top-level
+`proxy_pass`, and `tls` may each be declared at most once. The normal validation
+rules are applied after merging. A file without `listen` is rejected when
+multiple listeners exist because Via cannot determine which listener should
+receive it.
 
 See [Reload configuration](hot-reload.md) for reload behavior.
 

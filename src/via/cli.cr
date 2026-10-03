@@ -112,14 +112,20 @@ module Via
       validated_configs = [] of Configuration::Validated?
       begin
         models.each_with_index do |model, index|
-          state = Runtime::State.new(error, debug, log_level_override)
+          configured_debug = model.debug == true
+          state = Runtime::State.new(
+            error,
+            debug,
+            log_level_override,
+            configured_debug: configured_debug
+          )
           states << state
           begin
             validated = validators[index].validate
             state.apply(validated, source: validated.config_file || path)
             validated_configs << validated
           rescue ex : Configuration::Error
-            raise ex unless debug && model.tls.nil?
+            raise ex unless (debug || configured_debug) && model.tls.nil?
             state.reject(model.config_file || path, ex)
             validated_configs << nil
           end
@@ -144,6 +150,7 @@ module Via
         config_path: path,
         listeners: banner_listeners,
         debug: debug,
+        configuration_debug: models.any? { |model| model.debug == true },
         log_level_override: log_level_override
       )
 
@@ -226,7 +233,7 @@ module Via
           TLS::ContextBuilder.build(validated.tls)
           logger.configure(
             validated.log_file,
-            validated.log_level || Logging::Level::Info
+            validated.debug ? Logging::Level::Debug : validated.log_level || Logging::Level::Info
           )
         end
       ensure

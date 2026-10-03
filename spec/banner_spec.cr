@@ -123,6 +123,27 @@ describe Via::Console::Banner do
     text.should contain("→ log level  warn")
   end
 
+  it "marks a listener with configured debug mode" do
+    config = Via::Configuration::Validated.new(
+      Via::Configuration::ListenAddress.new("0.0.0.0", 8080),
+      [Via::Routing::Route.new(nil, "/", URI.parse("http://localhost:3000"))],
+      debug: true
+    )
+    output = IO::Memory.new
+
+    Via::Console::Banner.render(
+      output,
+      config_path: "config.yaml",
+      listen: ":8080",
+      config: config,
+      debug: false
+    )
+
+    text = output.to_s
+    text.should contain("→ listening  :8080 (debug)")
+    text.should contain("→ mode       debug")
+  end
+
   it "shows the CLI log level override" do
     config = Via::Configuration::Validated.new(
       Via::Configuration::ListenAddress.new("0.0.0.0", 8080),

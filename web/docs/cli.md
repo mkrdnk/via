@@ -92,6 +92,9 @@ routing, and upstream details to logs. It overrides the configured `log_level`
 with `DEBUG` unless `--log-level` provides an explicit CLI override. See
 [Reload configuration](hot-reload.md).
 
+`--debug` applies to every listener. To debug only one listener, set
+`debug: true` in that listener's YAML configuration instead.
+
 ## Exit behavior
 
 Configuration and listener errors produce a non-zero exit status. `SIGINT` and

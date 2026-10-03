@@ -30,9 +30,10 @@ during configuration reload.
 The effective level is selected in this order:
 
 1. `--log-level`;
-2. `--debug`, which selects `DEBUG`;
-3. `log_level` in YAML;
-4. the default `INFO`.
+2. `--debug`, which selects `DEBUG` for every listener;
+3. `debug: true` in a listener's YAML, which selects `DEBUG` for that listener;
+4. `log_level` in YAML;
+5. the default `INFO`.
 
 ## Trace a failed request
 
@@ -71,6 +72,14 @@ Run with debug logging:
 
 ```sh
 via run --debug -c via.yaml
+```
+
+For one listener only, enable it in YAML:
+
+```yaml
+listen: ":8080"
+debug: true
+proxy_pass: http://localhost:3000
 ```
 
 Debug records show the incoming request, selected route, upstream, and upstream

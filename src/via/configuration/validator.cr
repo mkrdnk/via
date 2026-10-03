@@ -13,7 +13,15 @@ module Via::Configuration
       tls = validate_tls
       log_file = validate_log_file
       log_level = validate_log_level
-      Validated.new(listen, routes, tls, log_file, log_level, @config.config_file)
+      Validated.new(
+        listen,
+        routes,
+        tls,
+        log_file,
+        log_level,
+        @config.config_file,
+        @config.debug || false
+      )
     end
 
     def validate_listen : ListenAddress

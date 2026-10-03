@@ -33,6 +33,7 @@ module Via::Console
       config_path : String,
       listeners : Array(Tuple(String, Configuration::Validated?)),
       debug : Bool,
+      configuration_debug : Bool = false,
       log_level_override : Logging::Level? = nil,
     ) : Nil
       logo(output)
@@ -40,7 +41,7 @@ module Via::Console
 
       row(output, "config", config_path)
       listeners.each do |listen, config|
-        row(output, "listening", listening_value(listen, config))
+        row(output, "listening", listening_value(listen, config, debug))
       end
 
       configs = [] of Configuration::Validated
@@ -52,7 +53,9 @@ module Via::Console
       if listeners.any? { |_, config| config.nil? }
         row(output, "state", "configuration error")
       end
-      row(output, "mode", "debug") if debug
+      if debug || configuration_debug || configs.any?(&.debug)
+        row(output, "mode", "debug")
+      end
       output << "\nready\n"
     end
 
@@ -69,8 +72,12 @@ module Via::Console
     private def listening_value(
       listen : String,
       config : Configuration::Validated?,
+      debug : Bool,
     ) : String
-      config.try(&.tls) ? "#{listen} (TLS)" : listen
+      modes = [] of String
+      modes << "TLS" if config.try(&.tls)
+      modes << "debug" if debug || config.try(&.debug)
+      modes.empty? ? listen : "#{listen} (#{modes.join(", ")})"
     end
 
     private def logging(
@@ -85,10 +92,10 @@ module Via::Console
       if level = log_level_override
         row(output, "log level", level.label)
       elsif configured_level = config.log_level
-        level = debug ? Logging::Level::Debug : configured_level
+        level = debug || config.debug ? Logging::Level::Debug : configured_level
         row(output, "log level", level.label)
       elsif config.log_file
-        row(output, "log level", debug ? "debug" : "info")
+        row(output, "log level", debug || config.debug ? "debug" : "info")
       end
     end
 

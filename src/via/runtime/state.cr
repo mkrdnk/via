@@ -10,10 +10,13 @@ module Via::Runtime
 
     def initialize(
       log : IO = STDERR,
-      @debug : Bool = false,
+      debug : Bool = false,
       @log_level_override : Logging::Level? = nil,
+      configured_debug : Bool = false,
     )
       @mutex = Mutex.new
+      @debug_override = debug
+      @debug = @debug_override || configured_debug
       @logger = Logging::Logger.new(log, @debug)
       @generation = nil
       @diagnostic = nil
@@ -32,8 +35,9 @@ module Via::Runtime
       tls_context = TLS::ContextBuilder.build(config.tls)
       scheme = config.tls ? "https" : "http"
       replacement = Generation.new(config.routes, @logger, scheme)
+      debug = @debug_override || config.debug
       level = @log_level_override ||
-              (@debug ? Logging::Level::Debug : config.log_level || Logging::Level::Info)
+              (debug ? Logging::Level::Debug : config.log_level || Logging::Level::Info)
       begin
         @logger.configure(config.log_file, level)
       rescue ex
@@ -44,6 +48,7 @@ module Via::Runtime
         old = @generation
         @generation = replacement
         @diagnostic = nil
+        @debug = debug
         {% unless flag?(:without_openssl) %}
           @tls_context = tls_context
         {% end %}
@@ -69,19 +74,20 @@ module Via::Runtime
 
     def reject(source : String, error : Exception) : Nil
       @logger.config_file = source
-      keeping_previous = @mutex.synchronize do
+      keeping_previous, diagnostic_enabled = @mutex.synchronize do
         previous = !@generation.nil?
-        if @debug
+        current_debug = @debug
+        if current_debug
           @diagnostic = Diagnostic.new(source, error.message || error.class.name)
         end
-        previous
+        {previous, current_debug}
       end
       @logger.error(
         "config.rejected",
         source: source,
         message: error.message,
         keeping_previous: keeping_previous,
-        diagnostic: @debug
+        diagnostic: diagnostic_enabled
       )
     end
 

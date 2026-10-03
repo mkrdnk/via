@@ -70,12 +70,14 @@ describe Via::Configuration::Model do
   it "loads logging configuration" do
     config = Via::Config.from_yaml <<-YAML
       listen: ":8080"
+      debug: true
       log_file: /var/log/via.log
       log_level: WARNING
       proxy_pass: http://localhost:3000
       YAML
 
     validated = config.validate
+    validated.debug.should be_true
     validated.log_file.should eq("/var/log/via.log")
     validated.log_level.should eq(Via::Logging::Level::Warn)
   end
@@ -211,6 +213,7 @@ describe Via::Configuration::Model do
     with_temp_directory do |directory|
       File.write(File.join(directory, "00-server.yaml"), <<-YAML)
         listen: ":8080"
+        debug: true
         YAML
       File.write(File.join(directory, "10-api.yml"), <<-YAML)
         routes:
@@ -225,7 +228,25 @@ describe Via::Configuration::Model do
 
       config = Via::ConfigLoader.new(directory).load.validate
       config.listen.should eq(Via::ListenAddress.new("0.0.0.0", 8080))
+      config.debug.should be_true
       config.routes.map(&.path).should eq(["/api", "/"])
+    end
+  end
+
+  it "rejects debug declared by multiple listener fragments" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "00-server.yaml"), <<-YAML)
+        listen: ":8080"
+        debug: true
+        YAML
+      File.write(File.join(directory, "10-route.yaml"), <<-YAML)
+        debug: false
+        proxy_pass: http://localhost:3000
+        YAML
+
+      expect_raises(Via::ConfigurationError, "declare debug at most once") do
+        Via::ConfigLoader.new(directory).load
+      end
     end
   end
 
@@ -746,6 +767,31 @@ describe Via::Runtime::State do
           [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))]
         ))
         HTTP::Client.get("http://#{address}/").body.should eq("working")
+      ensure
+        proxy.close
+      end
+    end
+  end
+
+  it "shows diagnostics when debug is enabled for the listener" do
+    upstream = HTTP::Server.new { |context| context.response << "working" }
+
+    with_server(upstream) do |upstream_address|
+      state = Via::RuntimeState.new(IO::Memory.new)
+      state.apply(Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))],
+        debug: true
+      ))
+      state.reject("via.yaml", Via::ConfigurationError.new("broken reload"))
+      proxy = Via::Server.new(Via::ListenAddress.new("127.0.0.1", 0), state)
+      address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        diagnostic = HTTP::Client.get("http://#{address}/")
+        diagnostic.status.should eq(HTTP::Status::SERVICE_UNAVAILABLE)
+        diagnostic.body.should contain("broken reload")
       ensure
         proxy.close
       end
