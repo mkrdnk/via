@@ -1,4 +1,4 @@
-name: Build release binaries
+name: Build release artifacts
 
 env:
   CRYSTAL_VERSION: 1.21.1
@@ -61,12 +61,14 @@ jobs:
         include:
           - platform: fedora43
             image: fedora:43
+            package_format: rpm
             packages: >-
               dnf install -y
               bash ca-certificates curl findutils gcc git gzip make tar xz
               gc-devel libevent-devel libyaml-devel openssl-devel pcre2-devel zlib-devel
           - platform: debian13
             image: debian:13
+            package_format: deb
             packages: >-
               apt-get update &&
               DEBIAN_FRONTEND=noninteractive apt-get install -y
@@ -74,6 +76,7 @@ jobs:
               libevent-dev libgc-dev libpcre2-dev libssl-dev libyaml-dev zlib1g-dev
           - platform: ubuntu24.04
             image: ubuntu:24.04
+            package_format: deb
             packages: >-
               apt-get update &&
               DEBIAN_FRONTEND=noninteractive apt-get install -y
@@ -92,9 +95,27 @@ jobs:
         shell: bash
         run: sh scripts/install-crystal.sh
 
-      - name: Build release binary
+      - name: Build release binary and native package
         shell: bash
-        run: shards build --release --production --no-debug
+        env:
+          FORMAT: ${{ matrix.package_format }}
+          PLATFORM: ${{ matrix.platform }}
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          case "$FORMAT" in
+            deb)
+              output="dist/via_${VERSION}_${PLATFORM}_amd64.deb"
+              ;;
+            rpm)
+              output="dist/via-${VERSION}-1.${PLATFORM}.x86_64.rpm"
+              ;;
+            *)
+              echo "Unsupported package format: $FORMAT" >&2
+              exit 1
+              ;;
+          esac
+          make "package-$FORMAT" VERSION="$VERSION" PACKAGE_OUTPUT="$output"
 
       - name: Package binary
         shell: bash
@@ -121,12 +142,16 @@ jobs:
             sha256sum "$package.tar.gz" > "$package.tar.gz.sha256"
           )
 
-      - name: Upload binary artifact
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: via-${{ matrix.platform }}-x86_64
           path: |
             dist/via-*.tar.gz
             dist/via-*.tar.gz.sha256
+            dist/via-*.rpm
+            dist/via-*.rpm.sha256
+            dist/via_*.deb
+            dist/via_*.deb.sha256
           if-no-files-found: error
           retention-days: 7

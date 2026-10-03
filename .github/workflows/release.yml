@@ -19,7 +19,7 @@ jobs:
       release_tag: ${{ github.ref_name }}
 
   release:
-    name: Attach binaries to release
+    name: Attach artifacts to release
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -27,22 +27,31 @@ jobs:
       contents: write
 
     steps:
-      - name: Download binary artifacts
+      - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: via-*-x86_64
           merge-multiple: true
           path: dist
 
-      - name: Verify downloaded archives
+      - name: Verify downloaded artifacts
         shell: bash
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
           cd dist
-          for platform in fedora43 debian13 ubuntu24.04; do
-            sha256sum --check "via-${VERSION}-${platform}-x86_64.tar.gz.sha256"
+          artifacts=(
+            "via-${VERSION}-fedora43-x86_64.tar.gz"
+            "via-${VERSION}-1.fedora43.x86_64.rpm"
+            "via-${VERSION}-debian13-x86_64.tar.gz"
+            "via_${VERSION}_debian13_amd64.deb"
+            "via-${VERSION}-ubuntu24.04-x86_64.tar.gz"
+            "via_${VERSION}_ubuntu24.04_amd64.deb"
+          )
+          for artifact in "${artifacts[@]}"; do
+            test -f "$artifact"
+            sha256sum --check "$artifact.sha256"
           done
 
       - name: Create release or upload missing assets
@@ -55,10 +64,17 @@ jobs:
         run: |
           set -euo pipefail
 
+          artifacts=(
+            "via-${VERSION}-fedora43-x86_64.tar.gz"
+            "via-${VERSION}-1.fedora43.x86_64.rpm"
+            "via-${VERSION}-debian13-x86_64.tar.gz"
+            "via_${VERSION}_debian13_amd64.deb"
+            "via-${VERSION}-ubuntu24.04-x86_64.tar.gz"
+            "via_${VERSION}_ubuntu24.04_amd64.deb"
+          )
           assets=()
-          for platform in fedora43 debian13 ubuntu24.04; do
-            archive="dist/via-${VERSION}-${platform}-x86_64.tar.gz"
-            assets+=("$archive" "$archive.sha256")
+          for artifact in "${artifacts[@]}"; do
+            assets+=("dist/$artifact" "dist/$artifact.sha256")
           done
 
           if is_draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft); then
@@ -72,19 +88,18 @@ jobs:
             verification_dir=$(mktemp -d)
             trap 'rm -rf "$verification_dir"' EXIT
 
-            for platform in fedora43 debian13 ubuntu24.04; do
-              archive="via-${VERSION}-${platform}-x86_64.tar.gz"
+            for artifact in "${artifacts[@]}"; do
               pair_missing=()
 
-              for file in "$archive" "$archive.sha256"; do
+              for file in "$artifact" "$artifact.sha256"; do
                 if ! grep -Fxq -- "$file" <<< "$existing"; then
                   pair_missing+=("dist/$file")
                 fi
               done
 
               if (( ${#pair_missing[@]} == 1 )); then
-                rm -f "$verification_dir/$archive" "$verification_dir/$archive.sha256"
-                for file in "$archive" "$archive.sha256"; do
+                rm -f "$verification_dir/$artifact" "$verification_dir/$artifact.sha256"
+                for file in "$artifact" "$artifact.sha256"; do
                   if grep -Fxq -- "$file" <<< "$existing"; then
                     gh release download "$RELEASE_TAG" \
                       --pattern "$file" \
@@ -95,7 +110,7 @@ jobs:
                 done
                 (
                   cd "$verification_dir"
-                  sha256sum --check "$archive.sha256"
+                  sha256sum --check "$artifact.sha256"
                 )
               fi
 
@@ -105,7 +120,7 @@ jobs:
             if (( ${#missing[@]} > 0 )); then
               gh release upload "$RELEASE_TAG" "${missing[@]}"
             else
-              echo "Release $RELEASE_TAG already has all binary assets."
+              echo "Release $RELEASE_TAG already has all assets."
             fi
           else
             gh release create "$RELEASE_TAG" "${assets[@]}" \
