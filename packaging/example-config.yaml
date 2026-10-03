@@ -1,6 +1,7 @@
 # This is an example Via config
 # See: https://via.makridenko.com/docs/
 listen: ":80"
+debug: true
 routes:
   - path: /
     static: /etc/via/start-page

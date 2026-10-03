@@ -30,8 +30,8 @@ via --version
 
 On a running systemd system, installing a native package also enables and
 starts `via.service`. The initial service listens on port 80 in debug mode and
-serves a local welcome page. Edit `/etc/via/example-config.yaml` before using
-the service in production.
+serves a local welcome page. Before using the service in production, edit
+`/etc/via/example-config.yaml` and remove `debug: true`.
 
 Tar archives remain available for installations that do not use an OS package:
 

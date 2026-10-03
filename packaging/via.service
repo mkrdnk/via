@@ -6,7 +6,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/via run --debug -c /etc/via
+ExecStart=/usr/bin/via run -c /etc/via
 Restart=on-failure
 RestartSec=2s
 User=via

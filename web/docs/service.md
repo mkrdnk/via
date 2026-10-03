@@ -14,7 +14,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/via run --debug -c /etc/via
+ExecStart=/usr/bin/via run -c /etc/via
 Restart=on-failure
 RestartSec=2s
 User=via
@@ -38,19 +38,15 @@ those files and applies valid changes atomically, so routine configuration
 edits do not require a service restart.
 
 Use absolute paths for `static`, `log_file`, certificates, and keys, or set
-`WorkingDirectory` explicitly in a unit override. Before using Via in
-production, replace the debug command with an override:
+`WorkingDirectory` explicitly in a unit override. The example configuration
+enables `debug: true` so configuration errors are visible on the welcome page.
+Before using Via in production, remove that setting from
+`/etc/via/example-config.yaml`. Via applies the change automatically without a
+service restart.
 
-```ini
-[Service]
-ExecStart=
-ExecStart=/usr/bin/via run -c /etc/via
-```
-
-Create it with `sudo systemctl edit via`, then apply it and inspect the service:
+Inspect the running service with:
 
 ```sh
-sudo systemctl restart via
 systemctl status via
 ```
 
