@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Via is running</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 2rem;
+      }
+
+      main {
+        max-width: 44rem;
+        margin: 10vh auto;
+      }
+
+      h1 {
+        line-height: 1.2;
+      }
+
+      .warning {
+        padding: 1rem;
+        border-left: 0.25rem solid #e9a23b;
+        background: color-mix(in srgb, #e9a23b 14%, transparent);
+      }
+
+      code {
+        font-family: ui-monospace, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Via was installed and started successfully!</h1>
+      <p class="warning">
+        The server is running in debug mode. Do not use this configuration in
+        production without reviewing and adjusting it first.
+      </p>
+
+      <h2>Next steps</h2>
+      <ol>
+        <li>Edit <code>/etc/via/example-config.yaml</code>.</li>
+        <li>Validate it with <code>via check -c /etc/via</code>.</li>
+        <li>
+          Via applies valid configuration changes automatically. Run
+          <code>systemctl restart via</code> after changing the systemd unit.
+        </li>
+        <li>
+          Before using Via in production, disable <code>--debug</code> with a
+          systemd override.
+        </li>
+      </ol>
+
+      <p>
+        <a href="https://via.makridenko.com/docs/">Via documentation</a>
+        ·
+        <a href="https://github.com/mkrdnk/via">Source code on GitHub</a>
+      </p>
+    </main>
+  </body>
+</html>

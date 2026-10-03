@@ -1,0 +1,75 @@
+name: via
+arch: ${PACKAGE_ARCH}
+platform: linux
+version: ${VERSION}
+release: 1
+section: web
+priority: optional
+maintainer: Adrian Makridenko <adrianmakridenko@duck.com>
+vendor: Via
+homepage: https://via.makridenko.com/
+license: Apache-2.0
+description: |
+  Concurrent HTTP reverse proxy
+  Via is a small, focused HTTP reverse proxy with host and path routing,
+  streaming, keep-alive, WebSocket tunnels, TLS termination, and atomic
+  configuration reloads.
+
+contents:
+  - src: bin/via
+    dst: /usr/bin/via
+    file_info:
+      mode: 0755
+  - src: packaging/example-config.yaml
+    dst: /etc/via/example-config.yaml
+    type: config|noreplace
+    file_info:
+      mode: 0644
+  - src: packaging/start-page/index.html
+    dst: /etc/via/start-page/index.html
+    type: config|noreplace
+    file_info:
+      mode: 0644
+  - src: packaging/via.service
+    dst: /usr/lib/systemd/system/via.service
+    file_info:
+      mode: 0644
+  - src: packaging/via.sysusers
+    dst: /usr/lib/sysusers.d/via.conf
+    file_info:
+      mode: 0644
+  - src: README.md
+    dst: /usr/share/doc/via/README.md
+    file_info:
+      mode: 0644
+  - src: CHANGELOG.md
+    dst: /usr/share/doc/via/CHANGELOG.md
+    file_info:
+      mode: 0644
+  - src: LICENSE
+    dst: /usr/share/doc/via/LICENSE
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/scripts/postinstall.sh
+  preremove: packaging/scripts/preremove.sh
+  postremove: packaging/scripts/postremove.sh
+
+overrides:
+  deb:
+    depends:
+      - libc6
+      - libgcc-s1
+      - libpcre2-8-0
+      - libssl3t64
+      - libyaml-0-2
+      - zlib1g
+  rpm:
+    depends:
+      - glibc
+      - libgcc
+      - libyaml
+      - openssl-libs
+      - pcre2
+      - zlib-ng-compat

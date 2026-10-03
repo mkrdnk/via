@@ -1,6 +1,8 @@
 /lib/
 /bin/
+/dist/
 /site/
+/.tools/
 /.shards/
 *.dwarf
 config.yaml
