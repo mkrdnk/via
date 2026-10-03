@@ -2,8 +2,38 @@
 
 ## Install a release
 
-Download the archive for your distribution from
+Download the package for your distribution from
 [GitHub Releases](https://github.com/mkrdnk/via/releases):
+
+```text
+via-VERSION-1.fedora43.x86_64.rpm
+via_VERSION_debian13_amd64.deb
+via_VERSION_ubuntu24.04_amd64.deb
+```
+
+Verify and install the native package:
+
+```sh
+sha256sum --check PACKAGE.sha256
+
+# Fedora
+sudo dnf install ./via-VERSION-1.fedora43.x86_64.rpm
+
+# Debian
+sudo apt install ./via_VERSION_debian13_amd64.deb
+
+# Ubuntu
+sudo apt install ./via_VERSION_ubuntu24.04_amd64.deb
+
+via --version
+```
+
+On a running systemd system, installing a native package also enables and
+starts `via.service`. The initial service listens on port 80 in debug mode and
+serves a local welcome page. Edit `/etc/via/example-config.yaml` before using
+the service in production.
+
+Tar archives remain available for installations that do not use an OS package:
 
 ```text
 via-VERSION-fedora43-x86_64.tar.gz
@@ -45,6 +75,20 @@ make doctor
 make release
 sudo install -m 0755 bin/via /usr/local/bin/via
 ```
+
+To create a native package for the current distribution, run one of:
+
+```sh
+make package-deb
+make package-rpm
+```
+
+Each target builds the release binary and writes the package and its
+`.sha256` file to `dist/`. The first run downloads a pinned, checksum-verified
+[nFPM](https://nfpm.goreleaser.com/) binary to `.tools/`; set `NFPM` to use an
+existing executable instead. Build DEB packages on Debian or Ubuntu and RPM
+packages on Fedora so the binary links against the target distribution's
+libraries.
 
 Use an HTTP-only build only when TLS listeners and HTTPS upstreams are not
 needed:

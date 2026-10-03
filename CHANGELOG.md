@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subprotocols, extensions, bidirectional frame relay, and ordinary HTTP
   rejection responses.
 - `via check` command for validating a configuration without starting listeners.
+- Native DEB and RPM release packages with checksums, an example configuration
+  and welcome page, and automatic systemd service setup.
 
 ### Changed
 
