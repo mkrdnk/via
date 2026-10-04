@@ -103,6 +103,7 @@ jobs:
 
           cp "$SOURCE_DIR/web/index.html" "$pages_dir/index.html"
           cp "$SOURCE_DIR/web/styles.css" "$pages_dir/styles.css"
+          cp "$SOURCE_DIR/install.sh" "$pages_dir/install.sh"
           cp "$SOURCE_DIR/web/CNAME" "$pages_dir/CNAME"
           touch "$pages_dir/.nojekyll"
           rm -rf "$pages_dir/assets"
@@ -114,7 +115,7 @@ jobs:
             "$pages_dir/assets/"
 
           git -C "$pages_dir" add \
-            index.html styles.css CNAME .nojekyll assets
+            index.html styles.css install.sh CNAME .nojekyll assets
           if ! git -C "$pages_dir" diff --cached --quiet; then
             git -C "$pages_dir" commit -m "Deploy landing for via $VERSION"
           fi
@@ -129,6 +130,7 @@ jobs:
       - name: Verify versioned site through Via
         env:
           DOCS_PREFIX: ${{ steps.versioned.outputs.docs_prefix }}
+          INSTALL_SCRIPT: ${{ steps.source.outputs.directory }}/install.sh
           VIA_BIN: ${{ steps.source.outputs.directory }}/bin/via
         run: sh web/pages-smoke.sh
 

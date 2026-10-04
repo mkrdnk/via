@@ -124,6 +124,7 @@ docs:
 	$(MKDOCS) build --strict --config-file web/mkdocs.yml
 	cp web/index.html site/index.html
 	cp web/styles.css site/styles.css
+	cp install.sh site/install.sh
 	mkdir -p site/assets
 	cp web/docs/assets/favicon.svg web/docs/assets/site.css web/docs/assets/via-logo.svg site/assets/
 	cp web/CNAME web/.nojekyll site/
