@@ -38,6 +38,21 @@ make release
 See [Install and run](web/docs/getting-started.md) for release verification,
 distribution-specific requirements, and HTTP-only builds.
 
+To build and run Via as an unprivileged container:
+
+```sh
+mkdir -p config
+cp via.yaml config/via.yaml
+docker build --tag via:local .
+docker run --rm --publish 8080:8080 \
+  --mount type=bind,source="$(pwd)/config",target=/etc/via,readonly \
+  via:local
+```
+
+See [Run in a container](web/docs/container.md) for configuration mounts,
+upstream networking, multi-architecture builds, GitHub Container Registry
+images, and log access.
+
 ## Documentation
 
 - [Install and run](web/docs/getting-started.md)
@@ -46,6 +61,7 @@ distribution-specific requirements, and HTTP-only builds.
 - [Static files](web/docs/static-files.md)
 - [TLS](web/docs/tls.md)
 - [Command line](web/docs/cli.md)
+- [Run in a container](web/docs/container.md)
 - [Run as a service](web/docs/service.md)
 - [Reload configuration](web/docs/hot-reload.md)
 - [Logs and troubleshooting](web/docs/logging.md)

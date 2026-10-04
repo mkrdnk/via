@@ -17,6 +17,7 @@ nav:
       - TLS: tls.md
   - Operate:
       - Command line: cli.md
+      - Run in a container: container.md
       - Run as a service: service.md
       - Reload configuration: hot-reload.md
       - Logs and troubleshooting: logging.md

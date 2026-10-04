@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Per-listener debug mode through `debug: true` in YAML configuration.
 - Native DEB and RPM release packages with checksums, an example configuration
   and welcome page, and automatic systemd service setup.
+- A small multi-stage Alpine image for running Via as an unprivileged container,
+  with automated x86-64 and ARM64 publication to GitHub Container Registry.
 
 ### Changed
 

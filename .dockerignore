@@ -1,0 +1,11 @@
+*
+!.dockerignore
+!Dockerfile
+!LICENSE
+!shard.yml
+!src/
+!src/**
+!web/
+!web/docs/
+!web/docs/assets/
+!web/docs/assets/favicon.svg
