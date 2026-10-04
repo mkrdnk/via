@@ -3,14 +3,24 @@ set -eu
 
 version="${NFPM_VERSION:-2.47.0}"
 install_dir="${NFPM_INSTALL_DIR:-${RUNNER_TEMP:-/tmp}/nfpm}"
-archive="nfpm_${version}_Linux_x86_64.tar.gz"
 base_url="https://github.com/goreleaser/nfpm/releases/download/v${version}"
 download_dir="${RUNNER_TEMP:-/tmp}/nfpm-download"
+machine="$(uname -m)"
 
-if [ "$(uname -m)" != "x86_64" ]; then
-  echo "scripts/install-nfpm.sh currently supports x86_64 only" >&2
-  exit 1
-fi
+case "$machine" in
+  x86_64 | amd64)
+    architecture="x86_64"
+    ;;
+  aarch64 | arm64)
+    architecture="arm64"
+    ;;
+  *)
+    echo "Unsupported nFPM architecture: $machine" >&2
+    exit 1
+    ;;
+esac
+
+archive="nfpm_${version}_Linux_${architecture}.tar.gz"
 
 rm -rf "$install_dir" "$download_dir"
 mkdir -p "$install_dir" "$download_dir"

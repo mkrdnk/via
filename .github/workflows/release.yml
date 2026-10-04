@@ -30,7 +30,7 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: via-*-x86_64
+          pattern: via-*
           merge-multiple: true
           path: dist
 
@@ -42,12 +42,12 @@ jobs:
           set -euo pipefail
           cd dist
           artifacts=(
-            "via-${VERSION}-fedora43-x86_64.tar.gz"
-            "via-${VERSION}-1.fedora43.x86_64.rpm"
-            "via-${VERSION}-debian13-x86_64.tar.gz"
-            "via_${VERSION}_debian13_amd64.deb"
-            "via-${VERSION}-ubuntu24.04-x86_64.tar.gz"
-            "via_${VERSION}_ubuntu24.04_amd64.deb"
+            "via-${VERSION}-linux-x86_64.rpm"
+            "via-${VERSION}-linux-x86_64.deb"
+            "via-${VERSION}-linux-x86_64-bin.tar.xz"
+            "via-${VERSION}-linux-aarch64.rpm"
+            "via-${VERSION}-linux-aarch64.deb"
+            "via-${VERSION}-linux-aarch64-bin.tar.xz"
           )
           for artifact in "${artifacts[@]}"; do
             test -f "$artifact"
@@ -65,12 +65,12 @@ jobs:
           set -euo pipefail
 
           artifacts=(
-            "via-${VERSION}-fedora43-x86_64.tar.gz"
-            "via-${VERSION}-1.fedora43.x86_64.rpm"
-            "via-${VERSION}-debian13-x86_64.tar.gz"
-            "via_${VERSION}_debian13_amd64.deb"
-            "via-${VERSION}-ubuntu24.04-x86_64.tar.gz"
-            "via_${VERSION}_ubuntu24.04_amd64.deb"
+            "via-${VERSION}-linux-x86_64.rpm"
+            "via-${VERSION}-linux-x86_64.deb"
+            "via-${VERSION}-linux-x86_64-bin.tar.xz"
+            "via-${VERSION}-linux-aarch64.rpm"
+            "via-${VERSION}-linux-aarch64.deb"
+            "via-${VERSION}-linux-aarch64-bin.tar.xz"
           )
           assets=()
           for artifact in "${artifacts[@]}"; do

@@ -49,34 +49,38 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Build ${{ matrix.platform }} x86_64
+    name: Build ${{ matrix.package.format }} ${{ matrix.architecture.name }}
     needs: metadata
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.architecture.runner }}
     timeout-minutes: 20
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.package.image }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: fedora43
+        architecture:
+          - name: x86_64
+            runner: ubuntu-24.04
+            package_arch: amd64
+          - name: aarch64
+            runner: ubuntu-24.04-arm
+            package_arch: arm64
+        package:
+          - format: rpm
             image: fedora:43
-            package_format: rpm
             packages: >-
               dnf install -y
               bash ca-certificates curl findutils gcc git gzip make tar xz
               gc-devel libevent-devel libyaml-devel openssl-devel pcre2-devel zlib-devel
-          - platform: debian13
+          - format: deb
             image: debian:13
-            package_format: deb
             packages: >-
               apt-get update &&
               DEBIAN_FRONTEND=noninteractive apt-get install -y
               bash build-essential ca-certificates curl git gzip make pkg-config tar xz-utils
               libevent-dev libgc-dev libpcre2-dev libssl-dev libyaml-dev zlib1g-dev
-          - platform: ubuntu24.04
+          - format: bin
             image: ubuntu:24.04
-            package_format: deb
             packages: >-
               apt-get update &&
               DEBIAN_FRONTEND=noninteractive apt-get install -y
@@ -86,7 +90,7 @@ jobs:
     steps:
       - name: Install platform build dependencies
         shell: bash
-        run: ${{ matrix.packages }}
+        run: ${{ matrix.package.packages }}
 
       - name: Check out repository
         uses: actions/checkout@v4
@@ -95,63 +99,30 @@ jobs:
         shell: bash
         run: sh scripts/install-crystal.sh
 
-      - name: Build release binary and native package
+      - name: Build release package
         shell: bash
         env:
-          FORMAT: ${{ matrix.package_format }}
-          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.architecture.name }}
+          FORMAT: ${{ matrix.package.format }}
+          PACKAGE_ARCH: ${{ matrix.architecture.package_arch }}
           VERSION: ${{ needs.metadata.outputs.version }}
         run: |
           set -euo pipefail
-          case "$FORMAT" in
-            deb)
-              output="dist/via_${VERSION}_${PLATFORM}_amd64.deb"
-              ;;
-            rpm)
-              output="dist/via-${VERSION}-1.${PLATFORM}.x86_64.rpm"
-              ;;
-            *)
-              echo "Unsupported package format: $FORMAT" >&2
-              exit 1
-              ;;
-          esac
-          make "package-$FORMAT" VERSION="$VERSION" PACKAGE_OUTPUT="$output"
-
-      - name: Package binary
-        shell: bash
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          VERSION: ${{ needs.metadata.outputs.version }}
-        run: |
-          set -euo pipefail
-          package="via-${VERSION}-${PLATFORM}-x86_64"
-          mkdir -p "dist/$package"
-          install -m 0755 bin/via "dist/$package/via"
-          cp CHANGELOG.md LICENSE README.md "dist/$package/"
-          tar \
-            --sort=name \
-            --owner=0 \
-            --group=0 \
-            --numeric-owner \
-            --mtime=@0 \
-            -C dist \
-            -cf - "$package" |
-            gzip -n > "dist/$package.tar.gz"
-          (
-            cd dist
-            sha256sum "$package.tar.gz" > "$package.tar.gz.sha256"
-          )
+          make "package-$FORMAT" \
+            VERSION="$VERSION" \
+            ARCH="$ARCH" \
+            PACKAGE_ARCH="$PACKAGE_ARCH"
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: via-${{ matrix.platform }}-x86_64
+          name: via-${{ matrix.package.format }}-${{ matrix.architecture.name }}
           path: |
-            dist/via-*.tar.gz
-            dist/via-*.tar.gz.sha256
+            dist/via-*.tar.xz
+            dist/via-*.tar.xz.sha256
             dist/via-*.rpm
             dist/via-*.rpm.sha256
-            dist/via_*.deb
-            dist/via_*.deb.sha256
+            dist/via-*.deb
+            dist/via-*.deb.sha256
           if-no-files-found: error
           retention-days: 7

@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restructured the documentation around installation, configuration, proxying,
   and operations; removed maintainer-only architecture, development, release,
   and website deployment pages from the user guide.
+- Release assets now use distribution-independent Linux names and are published
+  as RPM, DEB, and `.tar.xz` binary packages for x86-64 and ARM64.
 - Proxy startup now uses `via run`; both `run` and `check` load `/etc/via/` by
   default and accept `-c`/`--config` overrides.
 

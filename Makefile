@@ -6,8 +6,8 @@ WRK ?= wrk
 CONFIG ?= config.yaml
 URL ?= http://127.0.0.1:8080/
 VERSION ?= $(shell awk '$$1 == "version:" { print $$2; exit }' shard.yml)
-PACKAGE_ARCH ?= amd64
-RPM_ARCH ?= x86_64
+ARCH ?= $(shell uname -m | sed -e 's/^amd64$$/x86_64/' -e 's/^arm64$$/aarch64/')
+PACKAGE_ARCH ?= $(if $(filter aarch64,$(ARCH)),arm64,$(if $(filter x86_64,$(ARCH)),amd64,$(ARCH)))
 DIST ?= dist
 NFPM_VERSION ?= 2.47.0
 NFPM_INSTALL_DIR ?= $(CURDIR)/.tools/nfpm/$(NFPM_VERSION)
@@ -21,7 +21,7 @@ $(NFPM):
 		sh scripts/install-nfpm.sh
 endif
 
-.PHONY: all doctor check-openssl build build-http release release-http package-deb package-rpm run debug test test-http format format-check docs docs-serve pages-smoke check check-http benchmark clean
+.PHONY: all doctor check-openssl build build-http release release-http package-bin package-deb package-rpm run debug test test-http format format-check docs docs-serve pages-smoke check check-http benchmark clean
 
 all: build
 
@@ -55,11 +55,37 @@ release: check-openssl
 release-http:
 	$(SHARDS) build --release --production --no-debug -Dwithout_openssl
 
+package-bin: release
+	@mkdir -p "$(DIST)"
+	@set -eu; \
+	output='$(PACKAGE_OUTPUT)'; \
+	if [ -z "$$output" ]; then output='$(DIST)/via-$(VERSION)-linux-$(ARCH)-bin.tar.xz'; fi; \
+	directory=$$(dirname "$$output"); filename=$$(basename "$$output"); \
+	case "$$filename" in \
+		*.tar.xz) package=$${filename%.tar.xz} ;; \
+		*) echo "Binary package output must end in .tar.xz: $$output" >&2; exit 1 ;; \
+	esac; \
+	mkdir -p "$$directory"; \
+	staging=$$(mktemp -d "$$directory/.via-package.XXXXXX"); \
+	trap 'rm -rf "$$staging"' EXIT; \
+	mkdir "$$staging/$$package"; \
+	install -m 0755 bin/via "$$staging/$$package/via"; \
+	cp CHANGELOG.md LICENSE README.md "$$staging/$$package/"; \
+	tar \
+		--sort=name \
+		--owner=0 \
+		--group=0 \
+		--numeric-owner \
+		--mtime=@0 \
+		-C "$$staging" \
+		-cf - "$$package" | xz --threads=1 > "$$output"; \
+	(cd "$$directory" && sha256sum "$$filename" > "$$filename.sha256")
+
 package-deb: release $(NFPM_PREREQUISITE)
 	@mkdir -p "$(DIST)"
 	@set -eu; \
 	output='$(PACKAGE_OUTPUT)'; \
-	if [ -z "$$output" ]; then output='$(DIST)/via_$(VERSION)_$(PACKAGE_ARCH).deb'; fi; \
+	if [ -z "$$output" ]; then output='$(DIST)/via-$(VERSION)-linux-$(ARCH).deb'; fi; \
 	VERSION='$(VERSION)' PACKAGE_ARCH='$(PACKAGE_ARCH)' \
 		$(NFPM) package --config packaging/nfpm.yaml --packager deb --target "$$output"; \
 	directory=$$(dirname "$$output"); filename=$$(basename "$$output"); \
@@ -69,7 +95,7 @@ package-rpm: release $(NFPM_PREREQUISITE)
 	@mkdir -p "$(DIST)"
 	@set -eu; \
 	output='$(PACKAGE_OUTPUT)'; \
-	if [ -z "$$output" ]; then output='$(DIST)/via-$(VERSION)-1.$(RPM_ARCH).rpm'; fi; \
+	if [ -z "$$output" ]; then output='$(DIST)/via-$(VERSION)-linux-$(ARCH).rpm'; fi; \
 	VERSION='$(VERSION)' PACKAGE_ARCH='$(PACKAGE_ARCH)' \
 		$(NFPM) package --config packaging/nfpm.yaml --packager rpm --target "$$output"; \
 	directory=$$(dirname "$$output"); filename=$$(basename "$$output"); \

@@ -6,24 +6,22 @@ Download the package for your distribution from
 [GitHub Releases](https://github.com/mkrdnk/via/releases):
 
 ```text
-via-VERSION-1.fedora43.x86_64.rpm
-via_VERSION_debian13_amd64.deb
-via_VERSION_ubuntu24.04_amd64.deb
+via-VERSION-linux-x86_64.rpm
+via-VERSION-linux-x86_64.deb
+via-VERSION-linux-aarch64.rpm
+via-VERSION-linux-aarch64.deb
 ```
 
-Verify and install the native package:
+Choose the package matching your architecture, verify it, and install it:
 
 ```sh
 sha256sum --check PACKAGE.sha256
 
-# Fedora
-sudo dnf install ./via-VERSION-1.fedora43.x86_64.rpm
+# Fedora / RHEL
+sudo dnf install ./via-VERSION-linux-x86_64.rpm
 
-# Debian
-sudo apt install ./via_VERSION_debian13_amd64.deb
-
-# Ubuntu
-sudo apt install ./via_VERSION_ubuntu24.04_amd64.deb
+# Debian / Ubuntu
+sudo apt install ./via-VERSION-linux-x86_64.deb
 
 via --version
 ```
@@ -36,35 +34,34 @@ serves a local welcome page. Before using the service in production, edit
 Tar archives remain available for installations that do not use an OS package:
 
 ```text
-via-VERSION-fedora43-x86_64.tar.gz
-via-VERSION-debian13-x86_64.tar.gz
-via-VERSION-ubuntu24.04-x86_64.tar.gz
+via-VERSION-linux-x86_64-bin.tar.xz
+via-VERSION-linux-aarch64-bin.tar.xz
 ```
 
-Verify and unpack it:
+Choose the archive matching your architecture, verify it, and unpack it:
 
 ```sh
-sha256sum --check via-VERSION-DISTRIBUTION-x86_64.tar.gz.sha256
-tar -xzf via-VERSION-DISTRIBUTION-x86_64.tar.gz
-sudo install -m 0755 via-VERSION-DISTRIBUTION-x86_64/via /usr/local/bin/via
+sha256sum --check via-VERSION-linux-x86_64-bin.tar.xz.sha256
+tar -xJf via-VERSION-linux-x86_64-bin.tar.xz
+sudo install -m 0755 via-VERSION-linux-x86_64-bin/via /usr/local/bin/via
 via --version
 ```
 
-Release binaries include TLS support and use the target distribution's system
-libraries.
+Release binaries are available for x86-64 and ARM64. They include TLS support
+and use Linux system libraries.
 
 ## Build from source
 
 Building requires Crystal 1.21.1 or newer and Shards. TLS builds also require
 OpenSSL development files.
 
-Fedora:
+Fedora / RHEL:
 
 ```sh
 sudo dnf install openssl-devel
 ```
 
-Debian or Ubuntu:
+Debian / Ubuntu:
 
 ```sh
 sudo apt install libssl-dev pkg-config
@@ -79,16 +76,16 @@ sudo install -m 0755 bin/via /usr/local/bin/via
 To create a native package for the current distribution, run one of:
 
 ```sh
+make package-bin
 make package-deb
 make package-rpm
 ```
 
-Each target builds the release binary and writes the package and its
-`.sha256` file to `dist/`. The first run downloads a pinned, checksum-verified
+Each target builds the release binary and writes the package and its `.sha256`
+file to `dist/`. Creating the binary archive requires `xz`. The first DEB or RPM
+build downloads a pinned, checksum-verified
 [nFPM](https://nfpm.goreleaser.com/) binary to `.tools/`; set `NFPM` to use an
-existing executable instead. Build DEB packages on Debian or Ubuntu and RPM
-packages on Fedora so the binary links against the target distribution's
-libraries.
+existing executable instead.
 
 Use an HTTP-only build only when TLS listeners and HTTPS upstreams are not
 needed:
