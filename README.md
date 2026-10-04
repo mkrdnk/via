@@ -7,16 +7,25 @@
 [Website](https://via.makridenko.com/) ·
 [Documentation](https://via.makridenko.com/docs/)
 
-Via is an early-stage, concurrent HTTP reverse proxy written in Crystal. It
-supports host/path routing, streaming request and response bodies, keep-alive,
-reusable upstream connections, transparent WebSocket tunnels, TLS termination,
-and atomic configuration reloads.
+Via is an early-stage HTTP reverse proxy. It supports host/path routing,
+streaming request and response bodies, keep-alive, reusable upstream
+connections, transparent WebSocket tunnels, TLS termination, and atomic
+configuration reloads.
 
 ## Quick start
 
-Download the build for your distribution from
-[GitHub Releases](https://github.com/mkrdnk/via/releases), then save this as
-`via.yaml`:
+Download the package for Debian 13 or Fedora 43, or the archive for Ubuntu
+24.04, from [GitHub Releases](https://github.com/mkrdnk/via/releases). See
+[Install and run](web/docs/getting-started.md) for package names, checksum
+verification, and installation commands.
+
+As a fallback when manual installation is not suitable, use the installer:
+
+```sh
+curl -fsSL https://via.makridenko.com/install.sh | sh
+```
+
+Save this as `via.yaml`:
 
 ```yaml
 listen: ":8080"
@@ -27,31 +36,22 @@ proxy_pass: http://localhost:3000
 via run -c via.yaml
 ```
 
-To build from source, install Crystal 1.21.1 or newer, Shards, and the OpenSSL
-development libraries, then run:
-
-```sh
-make doctor
-make release
-```
-
-See [Install and run](web/docs/getting-started.md) for release verification,
-distribution-specific requirements, and HTTP-only builds.
-
-To build and run Via as an unprivileged container:
+To run Via as an unprivileged container:
 
 ```sh
 mkdir -p config
-cp via.yaml config/via.yaml
-docker build --tag via:local .
+cat > config/via.yaml <<'YAML'
+listen: ":8080"
+proxy_pass: http://host.docker.internal:3000
+YAML
 docker run --rm --publish 8080:8080 \
+  --add-host host.docker.internal:host-gateway \
   --mount type=bind,source="$(pwd)/config",target=/etc/via,readonly \
-  via:local
+  ghcr.io/mkrdnk/via:latest
 ```
 
 See [Run in a container](web/docs/container.md) for configuration mounts,
-upstream networking, multi-architecture builds, GitHub Container Registry
-images, and log access.
+upstream networking, image versions, and log access.
 
 ## Documentation
 
@@ -65,8 +65,6 @@ images, and log access.
 - [Run as a service](web/docs/service.md)
 - [Reload configuration](web/docs/hot-reload.md)
 - [Logs and troubleshooting](web/docs/logging.md)
-
-Via is under active development.
 
 ## License
 

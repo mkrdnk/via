@@ -42,6 +42,3 @@ requires restarting Via. Changing `listen` also requires a restart.
 
 Via supports one certificate and key pair per listener. SNI-based multiple
 certificates and ACME automation are not supported.
-
-OpenSSL development libraries are required for a normal build. Use
-`make release-http` only when TLS support and HTTPS upstreams are not needed.

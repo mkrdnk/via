@@ -1,8 +1,6 @@
 # Run in a container
 
-The repository includes a multi-stage `Dockerfile` that builds Via from source
-and copies only the executable and its runtime libraries into a small Alpine
-image. The image runs as the unprivileged user `via` with UID and GID `10001`.
+The Via image runs as the unprivileged user `via` with UID and GID `10001`.
 
 ## Pull a release image
 
@@ -14,21 +12,6 @@ docker pull ghcr.io/mkrdnk/via:VERSION
 ```
 
 Stable releases are also tagged as `latest`.
-
-## Build the image locally
-
-Build for the host architecture:
-
-```sh
-docker build --tag via:local .
-```
-
-Docker can also build an image for a specific supported architecture:
-
-```sh
-docker buildx build --platform linux/amd64 --tag via:amd64 --load .
-docker buildx build --platform linux/arm64 --tag via:arm64 --load .
-```
 
 ## Configure and run Via
 
@@ -49,7 +32,7 @@ docker run --rm --name via \
   --publish 8080:8080 \
   --add-host host.docker.internal:host-gateway \
   --mount type=bind,source="$(pwd)/config",target=/etc/via,readonly \
-  via:local
+  ghcr.io/mkrdnk/via:VERSION
 ```
 
 The `host.docker.internal` mapping lets Via reach a service listening on port
@@ -69,7 +52,7 @@ Via command to override that default:
 ```sh
 docker run --rm \
   --mount type=bind,source="$(pwd)/config",target=/etc/via,readonly \
-  via:local check
+  ghcr.io/mkrdnk/via:VERSION check
 ```
 
 Via writes operational logs to standard error by default, so they are available

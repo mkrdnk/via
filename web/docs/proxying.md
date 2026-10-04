@@ -72,8 +72,7 @@ Negotiated extensions are transparent as well.
 An upstream HTTP rejection such as `401 Unauthorized` is returned as a normal
 HTTP response, including its body. A connection or handshake failure before a
 response produces `502 Bad Gateway`. Downstream TLS termination and HTTPS
-upstreams work with WebSockets in the same way as ordinary requests; use an
-HTTP-only build only when neither side requires TLS.
+upstreams work with WebSockets in the same way as ordinary requests.
 
 ## Body streaming
 
