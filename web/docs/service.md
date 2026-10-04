@@ -19,8 +19,8 @@ Restart=on-failure
 RestartSec=2s
 User=via
 Group=via
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
 NoNewPrivileges=yes
 PrivateTmp=yes
 
@@ -36,6 +36,14 @@ systemd is running. A system user and group named `via` are created through
 The directory can be split into lexically ordered YAML fragments. Via watches
 those files and applies valid changes atomically, so routine configuration
 edits do not require a service restart.
+
+The packaged service keeps the process under the unprivileged `via` user.
+`CAP_NET_BIND_SERVICE` permits listeners on ports such as 80 and 443, while
+`CAP_DAC_READ_SEARCH` permits reading root-managed TLS files, including the
+default Certbot paths under `/etc/letsencrypt/live/`. The latter bypasses normal
+file and directory read checks but does not grant write access. Remove it from
+a local unit override when every configured certificate, key, and static root
+is already readable by `via`.
 
 Use absolute paths for `static`, `log_file`, certificates, and keys, or set
 `WorkingDirectory` explicitly in a unit override. The example configuration

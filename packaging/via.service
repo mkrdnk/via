@@ -11,8 +11,8 @@ Restart=on-failure
 RestartSec=2s
 User=via
 Group=via
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
 NoNewPrivileges=yes
 PrivateTmp=yes
 

@@ -17,6 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -->
 
+## 0.3.1 - [unreleased]
+
+### Changed
+
+- The packaged systemd service can read root-managed TLS certificates, including
+  Certbot's default paths, while continuing to run as the unprivileged `via`
+  user. Inaccessible TLS files now produce a configuration error instead of an
+  unhandled exception.
+
+---
+
 ## 0.3.0 - 2026-10-04
 
 ### Added
