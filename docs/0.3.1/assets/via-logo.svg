@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">via — Route What Matters</title>
+  <desc id="desc">Geometric V Lambda logo with the name via and tagline Route What Matters.</desc>
+
+  <!-- Transparent background -->
+
+  <!-- VΛ mark -->
+  <g fill="#111111">
+    <!-- V -->
+    <path d="M120 70 H174 L240 190 L306 70 H360 L268 238 H212 Z"/>
+    <!-- Lambda -->
+    <path d="M286 238 L378 70 H432 L524 238 H468 L405 122 L342 238 Z"/>
+  </g>
+
+  <!-- Name -->
+  <text
+    x="320"
+    y="310"
+    text-anchor="middle"
+    fill="#111111"
+    font-family="Inter, Helvetica, Arial, sans-serif"
+    font-size="58"
+    font-weight="400"
+    letter-spacing="18">via</text>
+
+  <!-- Tagline -->
+  <text
+    x="320"
+    y="365"
+    text-anchor="middle"
+    fill="#777777"
+    font-family="Inter, Helvetica, Arial, sans-serif"
+    font-size="16"
+    font-weight="400"
+    letter-spacing="8">ROUTE WHAT MATTERS</text>
+</svg>
