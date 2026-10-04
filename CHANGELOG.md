@@ -17,7 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -->
 
-## 0.3.1 - [unreleased]
+## 0.3.2 - [unreleased]
+
+### Fixed
+
+- Removed the process-wide `CAP_DAC_READ_SEARCH` permission added to the
+  packaged service in 0.3.1. TLS files must now be explicitly readable by the
+  `via` account, preventing TLS access from also bypassing static-file
+  permissions.
+
+---
+
+## 0.3.1 - 2026-10-04
 
 ### Changed
 
