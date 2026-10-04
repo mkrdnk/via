@@ -356,6 +356,34 @@ describe Via::Configuration::Model do
     end
   end
 
+  it "reports inaccessible TLS certificate paths as configuration errors" do
+    with_temp_directory do |directory|
+      blocked = File.join(directory, "blocked")
+      Dir.mkdir(blocked)
+      cert = File.join(blocked, "cert.pem")
+      File.write(cert, "test certificate")
+      File.chmod(blocked, 0o000)
+
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":443"
+        tls:
+          cert: #{cert}
+          key: #{cert}
+        proxy_pass: http://localhost:3000
+        YAML
+
+      if LibC.getuid == 0
+        config.validate.tls.not_nil!.cert.should eq(cert)
+      else
+        expect_raises(Via::ConfigurationError, "tls.cert is not a readable file") do
+          config.validate
+        end
+      end
+    ensure
+      File.chmod(blocked, 0o700) if blocked && Dir.exists?(blocked)
+    end
+  end
+
   {% if flag?(:without_openssl) %}
     it "rejects TLS at runtime in an HTTP-only build" do
       expect_raises(Via::ConfigurationError, "built without OpenSSL") do

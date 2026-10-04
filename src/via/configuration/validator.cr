@@ -283,8 +283,14 @@ module Via::Configuration
       if path.empty?
         raise Error.new("#{field} must not be empty")
       end
-      info = File.info?(path)
-      unless info && info.file? && File::Info.readable?(path)
+
+      begin
+        info = File.info(path)
+        unless info.file?
+          raise Error.new("#{field} is not a readable file: #{path}")
+        end
+        File.open(path) { }
+      rescue File::Error
         raise Error.new("#{field} is not a readable file: #{path}")
       end
     end
