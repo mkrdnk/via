@@ -18,6 +18,7 @@ module Via
   alias ValidatedConfig = Configuration::Validated
 
   alias Route = Routing::Route
+  alias ReturnTarget = Routing::ReturnTarget
   alias Router = Routing::Router
   alias StaticTarget = Routing::StaticTarget
 

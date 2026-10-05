@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Route-level `return` directives for immediate status responses and redirects,
+  with safe `$host` and request-time `$query` expansion.
 - Configurable upstream connect, read, and write timeouts with listener defaults
   and per-route overrides for HTTP and WebSocket proxying.
 - Graceful `SIGINT` and `SIGTERM` shutdown that drains active HTTP requests,

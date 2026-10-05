@@ -3,7 +3,10 @@ require "uri"
 
 module Via::Configuration
   class Validator
-    DURATION_PATTERN = /\A(?<value>(?:\d+(?:\.\d*)?|\.\d+))(?<unit>ms|s|m|h)\z/
+    DURATION_PATTERN  = /\A(?<value>(?:\d+(?:\.\d*)?|\.\d+))(?<unit>ms|s|m|h)\z/
+    RETURN_PATTERN    = /\A(?<status>\d{3})(?:[ \t]+(?<location>\S+))?\z/
+    RETURN_VARIABLE   = /\$[A-Za-z_][A-Za-z0-9_]*/
+    REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 
     def initialize(@config : Model)
     end
@@ -95,14 +98,14 @@ module Via::Configuration
       route_configs.map_with_index do |route, index|
         upstream = route.proxy_pass
         static_config = route.static_config
-        if upstream && static_config
+        return_config = route.return_config
+        target_count = 0
+        target_count += 1 unless upstream.nil?
+        target_count += 1 unless static_config.nil?
+        target_count += 1 unless return_config.nil?
+        unless target_count == 1
           raise Error.new(
-            "routes[#{index}] must use either proxy_pass or static, not both"
-          )
-        end
-        unless upstream || static_config
-          raise Error.new(
-            "routes[#{index}] requires proxy_pass or static"
+            "routes[#{index}] requires exactly one of proxy_pass, static, or return"
           )
         end
 
@@ -124,6 +127,17 @@ module Via::Configuration
             "routes[#{index}].proxy_pass",
             route_timeouts
           )
+        elsif static_config
+          if route.timeouts
+            raise Error.new("routes[#{index}].timeouts requires an upstream URL")
+          end
+
+          Routing::Route.new(
+            host,
+            path,
+            nil,
+            parse_static(static_config, index)
+          )
         else
           if route.timeouts
             raise Error.new("routes[#{index}].timeouts requires an upstream URL")
@@ -133,7 +147,11 @@ module Via::Configuration
             host,
             path,
             nil,
-            parse_static(static_config.not_nil!, index)
+            return_target: parse_return(
+              return_config.not_nil!,
+              host,
+              "routes[#{index}].return"
+            )
           )
         end
       end
@@ -166,6 +184,46 @@ module Via::Configuration
       else
         raise "Unsupported proxy_pass value"
       end
+    end
+
+    private def parse_return(
+      value : ReturnValue,
+      host : String?,
+      field : String,
+    ) : Routing::ReturnTarget
+      if value.is_a?(Int32)
+        return Routing::ReturnTarget.new(parse_response_status(value, field), nil)
+      end
+
+      match = RETURN_PATTERN.match(value.strip)
+      unless match
+        raise Error.new(
+          "Invalid #{field}: #{value} (expected STATUS or STATUS LOCATION)"
+        )
+      end
+
+      status = parse_response_status(match["status"].to_i, field)
+      location = match["location"]?
+      return Routing::ReturnTarget.new(status, nil) unless location
+
+      unless REDIRECT_STATUSES.includes?(status)
+        raise Error.new(
+          "Invalid #{field}: status #{status} cannot return a location " \
+          "(expected 301, 302, 303, 307, or 308)"
+        )
+      end
+
+      if /[\x00-\x20\x7f]/.match(location)
+        raise Error.new("Invalid location in #{field}: control characters are not allowed")
+      end
+      location.scan(RETURN_VARIABLE).each do |match_data|
+        variable = match_data[0]
+        unless variable.in?("$host", "$query")
+          raise Error.new("Unsupported variable #{variable} in #{field}")
+        end
+      end
+
+      Routing::ReturnTarget.new(status, expand_host(location, host, field))
     end
 
     private def parse_timeouts(
@@ -236,6 +294,10 @@ module Via::Configuration
     end
 
     private def expand_upstream(value : String, host : String?, field : String) : String
+      expand_host(value, host, field)
+    end
+
+    private def expand_host(value : String, host : String?, field : String) : String
       return value unless value.includes?("$host")
 
       unless host

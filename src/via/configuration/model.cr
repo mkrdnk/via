@@ -48,6 +48,7 @@ module Via::Configuration
   end
 
   alias ProxyPass = String | Int32
+  alias ReturnValue = String | Int32
 
   class Route
     include YAML::Serializable
@@ -61,6 +62,9 @@ module Via::Configuration
 
     @[YAML::Field(key: "static")]
     getter static_config : String | Static | Nil
+
+    @[YAML::Field(key: "return")]
+    getter return_config : ReturnValue?
 
     getter timeouts : Timeouts?
   end

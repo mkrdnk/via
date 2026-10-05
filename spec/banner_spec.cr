@@ -80,6 +80,15 @@ describe Via::Console::Banner do
       Via::Configuration::ListenAddress.new("0.0.0.0", 8080),
       [
         Via::Routing::Route.new(nil, "/admin", nil, nil, 403),
+        Via::Routing::Route.new(
+          nil,
+          "/redirect",
+          nil,
+          return_target: Via::Routing::ReturnTarget.new(
+            301,
+            "https://example.com$query"
+          )
+        ),
       ]
     )
     output = IO::Memory.new
@@ -92,7 +101,9 @@ describe Via::Console::Banner do
       debug: false
     )
 
-    output.to_s.should contain("→ response   403")
+    text = output.to_s
+    text.should contain("→ response   403")
+    text.should contain("→ return     301 https://example.com$query")
   end
 
   it "shows configured logging settings" do

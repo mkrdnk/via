@@ -55,7 +55,7 @@ journalctl -u via -o cat | grep 'request_id="fbd06c3469d1c645432441b7816b52ad"'
 | Status | Meaning |
 | --- | --- |
 | `400 Bad Request` | The request has no valid HTTP/1.1 `Host` header. |
-| `403 Forbidden` | A route is configured with `proxy_pass: 403`. |
+| `403 Forbidden` | A route is configured with `return: 403`. |
 | `404 Not Found` | No route matches, or a static file does not exist. |
 | `405 Method Not Allowed` | A static route received a method other than `GET` or `HEAD`. |
 | `416 Range Not Satisfiable` | A static byte range is invalid or unavailable. |

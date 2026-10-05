@@ -117,6 +117,13 @@ module Via::Console
 
       response_statuses = routes.compact_map(&.response_status).uniq
       response_statuses.each { |status| row(output, "response", status.to_s) }
+
+      returns = routes.compact_map(&.return_target).uniq
+      returns.each do |target|
+        value = target.location.try { |location| "#{target.status} #{location}" } ||
+                target.status.to_s
+        row(output, "return", value)
+      end
     end
   end
 end

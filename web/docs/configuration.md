@@ -18,11 +18,10 @@ proxy_pass: http://localhost:3000
 - `HOST:PORT`;
 - `[IPv6]:PORT`.
 
-`proxy_pass` accepts either:
-
-- an HTTP or HTTPS URL without a path, query, fragment, or credentials; or
-- an unquoted integer from `200` through `599`, which returns that status
-  directly without contacting an upstream.
+`proxy_pass` accepts an HTTP or HTTPS URL without a path, query, fragment, or
+credentials. For compatibility, an unquoted integer from `200` through `599`
+still returns that status directly, but new configurations should use
+[`return`](#immediate-responses-and-redirects).
 
 The short form may include `host`. This limits the route to that request host:
 
@@ -128,14 +127,44 @@ routes:
     proxy_pass: http://localhost:3000
 
   - path: /admin
-    proxy_pass: 403
+    return: 403
 ```
 
 Top-level `proxy_pass` and `routes` are mutually exclusive. Every route must
-have exactly one target: `proxy_pass` or `static`. `host` is optional and
-`path` defaults to `/`. A numeric `proxy_pass` renders Via's built-in status
-page with a request ID. Statuses that prohibit response content (`204`, `205`,
-and `304`) remain empty.
+have exactly one target: `proxy_pass`, `static`, or `return`. `host` is optional
+and `path` defaults to `/`.
+
+### Immediate responses and redirects
+
+Use `return` to respond without contacting an upstream:
+
+```yaml
+listen: ":80"
+
+routes:
+  - path: /admin
+    return: 403
+
+  - host: example.com
+    path: /
+    return: 301 https://$host$query
+```
+
+`return` accepts an unquoted integer from `200` through `599`. Via renders its
+built-in status page with a request ID. Statuses that prohibit response content
+(`204`, `205`, and `304`) remain empty.
+
+To redirect, use `STATUS LOCATION`. Redirect locations are supported for `301`,
+`302`, `303`, `307`, and `308`; they may be absolute URLs or relative
+references. Redirect responses have an empty body. Locations support:
+
+- `$host`, replaced during validation with the route's configured `host`;
+- `$query`, replaced for each request with `?` and the original encoded query
+  string, or with an empty string when the request has no query.
+
+A location containing `$host` requires the route to declare `host`. This keeps
+an arbitrary request `Host` from selecting the redirect destination. Other
+variables are rejected.
 
 ### Path matching
 
@@ -276,6 +305,6 @@ routes:
       fallback: index.html
 ```
 
-Each route must contain exactly one of `proxy_pass` or `static`. See
+Each route must contain exactly one of `proxy_pass`, `static`, or `return`. See
 [Static files](static-files.md) for path mapping, caching, range requests, and
 security behavior.

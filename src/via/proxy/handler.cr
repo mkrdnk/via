@@ -96,6 +96,36 @@ module Via::Proxy
       end
 
       route_path = route.path
+      if return_target = route.return_target
+        target = "return"
+        location = return_target.location.try do |template|
+          expand_return_location(template, request)
+        end
+        @logger.debug(
+          "routing.selected",
+          request_id: id,
+          target: target,
+          route_host: route.host,
+          route_path: route.path,
+          status: return_target.status,
+          location: location
+        )
+
+        if location
+          response.status = ::HTTP::Status.new(return_target.status)
+          response.headers["Location"] = location
+          response.headers["Content-Length"] = "0"
+        else
+          Via::HTTP::ErrorPages.render(
+            response,
+            ::HTTP::Status.new(return_target.status),
+            id,
+            head: request.method == "HEAD"
+          )
+        end
+        return
+      end
+
       if response_status = route.response_status
         target = "response"
         @logger.debug(
@@ -248,6 +278,15 @@ module Via::Proxy
           failure: failure
         )
       end
+    end
+
+    private def expand_return_location(
+      template : String,
+      request : ::HTTP::Request,
+    ) : String
+      query = request.query
+      suffix = query.nil? || query.empty? ? "" : "?#{query}"
+      template.gsub("$query", suffix)
     end
 
     private def copy_response(

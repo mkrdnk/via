@@ -251,6 +251,56 @@ describe Via::Configuration::Model do
     route.response_status.should eq(403)
   end
 
+  it "validates immediate responses and redirects" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - path: /denied
+          return: 403
+        - host: Example.COM
+          path: /
+          return: 301 https://$host$query
+      YAML
+
+    response = config.validate.routes[0].return_target
+    response.should eq(Via::ReturnTarget.new(403, nil))
+
+    redirect = config.validate.routes[1].return_target
+    redirect.should eq(
+      Via::ReturnTarget.new(301, "https://example.com$query")
+    )
+  end
+
+  it "rejects invalid return directives" do
+    {
+      "99"                                   => "expected 200..599",
+      "600"                                  => "expected 200..599",
+      "200 hello"                            => "cannot return a location",
+      "301 https://example.com/x y"          => "expected STATUS or STATUS LOCATION",
+      "301 https://example.com/$path"        => "Unsupported variable $path",
+      "301 https://example.com/$querystring" => "Unsupported variable $querystring",
+    }.each do |value, message|
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        routes:
+          - return: #{value}
+        YAML
+
+      expect_raises(Via::ConfigurationError, message) do
+        config.validate
+      end
+    end
+
+    missing_host = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - return: 308 https://$host$query
+      YAML
+    expect_raises(Via::ConfigurationError, "$host in routes[0].return requires a configured host") do
+      missing_host.validate
+    end
+  end
+
   it "rejects non-final HTTP response statuses" do
     {199, 600}.each do |status|
       config = Via::Config.from_yaml <<-YAML
@@ -564,9 +614,10 @@ describe Via::Configuration::Model do
           - path: /
             static: #{directory}
             proxy_pass: http://localhost:3000
+            return: 204
         YAML
 
-      expect_raises(Via::ConfigurationError, "either proxy_pass or static") do
+      expect_raises(Via::ConfigurationError, "exactly one of proxy_pass, static, or return") do
         config.validate
       end
     end
@@ -1509,9 +1560,9 @@ describe Via::Proxy::Handler do
         listen: ":8080"
         routes:
           - path: /admin
-            proxy_pass: 403
+            return: 403
           - path: /empty
-            proxy_pass: 204
+            return: 204
           - path: /
             proxy_pass: http://#{upstream_address}
         YAML
@@ -1547,6 +1598,46 @@ describe Via::Proxy::Handler do
       ensure
         proxy.close
       end
+    end
+  end
+
+  it "returns redirects with the configured host and original query" do
+    routes = Via::Config.from_yaml(<<-YAML).validate.routes
+      listen: ":8080"
+      routes:
+        - host: example.com
+          return: 301 https://$host$query
+      YAML
+    config = Via::ValidatedConfig.new(
+      Via::ListenAddress.new("127.0.0.1", 0),
+      routes
+    )
+    proxy = Via::Server.new(config, IO::Memory.new)
+    proxy_address = proxy.bind
+    spawn proxy.listen
+    headers = HTTP::Headers{"Host" => "Example.COM:80"}
+
+    begin
+      redirect = HTTP::Client.get(
+        "http://#{proxy_address}/old?next=%2Fdocs&source=a+b",
+        headers
+      )
+      redirect.status.should eq(HTTP::Status::MOVED_PERMANENTLY)
+      redirect.headers["Location"].should eq(
+        "https://example.com?next=%2Fdocs&source=a+b"
+      )
+      redirect.headers["Content-Length"].should eq("0")
+      redirect.body.should be_empty
+
+      without_query = HTTP::Client.get("http://#{proxy_address}/old", headers)
+      without_query.headers["Location"].should eq("https://example.com")
+
+      head = HTTP::Client.head("http://#{proxy_address}/old?source=head", headers)
+      head.status.should eq(HTTP::Status::MOVED_PERMANENTLY)
+      head.headers["Location"].should eq("https://example.com?source=head")
+      head.body.should be_empty
+    ensure
+      proxy.close
     end
   end
 
