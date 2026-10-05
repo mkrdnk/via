@@ -108,7 +108,7 @@ describe Via::Configuration::Model do
   end
 
   it "rejects invalid timeout configuration" do
-    {"0s", "-1s", "30", "1d"}.each do |duration|
+    {"0s", "-1s", "30", "1d", "#{"9" * 400}s"}.each do |duration|
       config = Via::Config.from_yaml <<-YAML
         listen: ":8080"
         timeouts:

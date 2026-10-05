@@ -183,7 +183,13 @@ module Via::Configuration
         )
       end
 
-      amount = match["value"].to_f
+      amount = match["value"].to_f?
+      unless amount
+        raise Error.new(
+          "Invalid #{field}: #{value} (duration is too large)"
+        )
+      end
+
       span = case match["unit"]
              when "ms"
                amount.milliseconds
