@@ -5,7 +5,11 @@ module Via::Proxy
     class ClosedError < Exception
     end
 
-    def initialize(@upstream : URI, max_idle = 32)
+    def initialize(
+      @upstream : URI,
+      max_idle = 32,
+      @timeouts : Routing::Timeouts = Routing::Timeouts.new,
+    )
       raise ArgumentError.new("max_idle must be positive") unless max_idle > 0
 
       @available = Channel(::HTTP::Client).new(max_idle)
@@ -52,6 +56,9 @@ module Via::Proxy
         else
           client = ::HTTP::Client.new(@upstream)
           client.compress = false
+          client.connect_timeout = @timeouts.connect if @timeouts.connect
+          client.read_timeout = @timeouts.read if @timeouts.read
+          client.write_timeout = @timeouts.write if @timeouts.write
           client
         end
       end

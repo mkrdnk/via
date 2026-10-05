@@ -11,6 +11,10 @@ module Via::Proxy
       property response_bytes = 0_i64
     end
 
+    private record PoolKey,
+      upstream : URI,
+      timeouts : Routing::Timeouts
+
     def initialize(
       routes : Enumerable(Routing::Route),
       @logger : Logging::Logger,
@@ -18,10 +22,11 @@ module Via::Proxy
     )
       route_list = routes.to_a
       @router = Routing::Router.new(route_list)
-      @clients = {} of String => Pool
+      @clients = {} of PoolKey => Pool
       route_list.each do |route|
         if upstream = route.upstream
-          @clients[upstream.to_s] ||= Pool.new(upstream)
+          key = PoolKey.new(upstream, route.timeouts)
+          @clients[key] ||= Pool.new(upstream, timeouts: route.timeouts)
         end
       end
     end
@@ -136,7 +141,7 @@ module Via::Proxy
       )
 
       if WebSocketTunnel.request?(request)
-        upstream_io = WebSocketTunnel.connect(upstream)
+        upstream_io = WebSocketTunnel.connect(upstream, route.timeouts)
         upgraded = false
 
         begin
@@ -178,7 +183,8 @@ module Via::Proxy
           upstream_io.close unless upgraded
         end
       else
-        @clients[upstream.to_s].with do |client|
+        key = PoolKey.new(upstream, route.timeouts)
+        @clients[key].with do |client|
           headers = Via::HTTP::ForwardedHeaders.request(request, upstream, id, @scheme)
           client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
             response.status = upstream_response.status
@@ -194,8 +200,9 @@ module Via::Proxy
       end
     rescue ex : TransportError
       request_id ||= Via::HTTP::RequestId.generate
+      timed_out = ex.is_a?(IO::TimeoutError)
       if transfer && transfer.downstream_started
-        failure = "stream_failed"
+        failure = timed_out ? "stream_timeout" : "stream_failed"
         @logger.error(
           "stream.failed",
           request_id: request_id,
@@ -203,7 +210,7 @@ module Via::Proxy
           message: ex.message
         )
       else
-        failure = "upstream_failed"
+        failure = timed_out ? "upstream_timeout" : "upstream_failed"
         @logger.error(
           "upstream.failed",
           request_id: request_id,
@@ -212,7 +219,7 @@ module Via::Proxy
         )
         Via::HTTP::ErrorPages.render(
           context.response,
-          ::HTTP::Status::BAD_GATEWAY,
+          timed_out ? ::HTTP::Status::GATEWAY_TIMEOUT : ::HTTP::Status::BAD_GATEWAY,
           request_id,
           head: context.request.method == "HEAD"
         )

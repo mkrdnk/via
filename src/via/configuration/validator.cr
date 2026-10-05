@@ -3,6 +3,8 @@ require "uri"
 
 module Via::Configuration
   class Validator
+    DURATION_PATTERN = /\A(?<value>(?:\d+(?:\.\d*)?|\.\d+))(?<unit>ms|s|m|h)\z/
+
     def initialize(@config : Model)
     end
 
@@ -63,6 +65,7 @@ module Via::Configuration
       proxy_pass = @config.proxy_pass
       route_configs = @config.routes
       top_level_host = @config.host
+      default_timeouts = parse_timeouts(@config.timeouts, "timeouts")
 
       if proxy_pass && route_configs
         raise Error.new("Use either proxy_pass or routes, not both")
@@ -74,7 +77,7 @@ module Via::Configuration
 
       if proxy_pass
         host = parse_host(top_level_host, "host")
-        return [build_proxy_route(host, "/", proxy_pass)]
+        return [build_proxy_route(host, "/", proxy_pass, timeouts: default_timeouts)]
       end
 
       unless route_configs && !route_configs.empty?
@@ -98,8 +101,26 @@ module Via::Configuration
         host = parse_host(route.host, "routes[#{index}].host")
         path = parse_path(route.path, index)
         if upstream
-          build_proxy_route(host, path, upstream, "routes[#{index}].proxy_pass")
+          if route.timeouts && !upstream.is_a?(String)
+            raise Error.new("routes[#{index}].timeouts requires an upstream URL")
+          end
+
+          route_timeouts = merge_timeouts(
+            default_timeouts,
+            parse_timeouts(route.timeouts, "routes[#{index}].timeouts")
+          )
+          build_proxy_route(
+            host,
+            path,
+            upstream,
+            "routes[#{index}].proxy_pass",
+            route_timeouts
+          )
         else
+          if route.timeouts
+            raise Error.new("routes[#{index}].timeouts requires an upstream URL")
+          end
+
           Routing::Route.new(
             host,
             path,
@@ -115,11 +136,17 @@ module Via::Configuration
       path : String,
       value : ProxyPass,
       field = "proxy_pass",
+      timeouts = Routing::Timeouts.new,
     ) : Routing::Route
       case value
       when String
         expanded = expand_upstream(value, host, field)
-        Routing::Route.new(host, path, parse_upstream(expanded, field))
+        Routing::Route.new(
+          host,
+          path,
+          parse_upstream(expanded, field),
+          timeouts: timeouts
+        )
       when Int32
         Routing::Route.new(
           host,
@@ -131,6 +158,67 @@ module Via::Configuration
       else
         raise "Unsupported proxy_pass value"
       end
+    end
+
+    private def parse_timeouts(
+      config : Timeouts?,
+      field : String,
+    ) : Routing::Timeouts
+      return Routing::Timeouts.new unless config
+
+      Routing::Timeouts.new(
+        connect: parse_duration(config.connect, "#{field}.connect"),
+        read: parse_duration(config.read, "#{field}.read"),
+        write: parse_duration(config.write, "#{field}.write")
+      )
+    end
+
+    private def parse_duration(value : String?, field : String) : Time::Span?
+      return unless value
+
+      match = DURATION_PATTERN.match(value)
+      unless match
+        raise Error.new(
+          "Invalid #{field}: #{value} (expected a positive duration using ms, s, m, or h)"
+        )
+      end
+
+      amount = match["value"].to_f
+      span = case match["unit"]
+             when "ms"
+               amount.milliseconds
+             when "s"
+               amount.seconds
+             when "m"
+               amount.minutes
+             when "h"
+               amount.hours
+             else
+               raise "Unsupported duration unit"
+             end
+
+      unless amount.finite? && span > Time::Span.zero
+        raise Error.new(
+          "Invalid #{field}: #{value} (expected a positive duration using ms, s, m, or h)"
+        )
+      end
+
+      span
+    rescue OverflowError
+      raise Error.new(
+        "Invalid #{field}: #{value} (duration is too large)"
+      )
+    end
+
+    private def merge_timeouts(
+      defaults : Routing::Timeouts,
+      overrides : Routing::Timeouts,
+    ) : Routing::Timeouts
+      Routing::Timeouts.new(
+        connect: overrides.connect || defaults.connect,
+        read: overrides.read || defaults.read,
+        write: overrides.write || defaults.write
+      )
     end
 
     private def expand_upstream(value : String, host : String?, field : String) : String

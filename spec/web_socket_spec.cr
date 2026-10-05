@@ -191,6 +191,54 @@ describe "WebSocket proxying" do
     end
   end
 
+  it "returns a gateway timeout when the upstream handshake stalls" do
+    upstream = TCPServer.new("127.0.0.1", 0)
+    upstream_address = upstream.local_address
+    spawn do
+      client = upstream.accept
+      begin
+        while line = client.gets(chomp: true)
+          break if line.empty?
+        end
+        sleep 150.milliseconds
+      ensure
+        client.close
+      end
+    end
+
+    route = Via::Route.new(
+      nil,
+      "/",
+      URI.parse("http://#{upstream_address}"),
+      timeouts: Via::RoutingTimeouts.new(read: 50.milliseconds)
+    )
+    config = Via::ValidatedConfig.new(
+      Via::ListenAddress.new("127.0.0.1", 0),
+      [route]
+    )
+    proxy = Via::Server.new(config, IO::Memory.new)
+    proxy_address = proxy.bind
+    spawn proxy.listen
+
+    begin
+      response = HTTP::Client.get(
+        "http://#{proxy_address}/socket",
+        headers: HTTP::Headers{
+          "Connection"            => "Upgrade",
+          "Upgrade"               => "websocket",
+          "Sec-WebSocket-Version" => "13",
+          "Sec-WebSocket-Key"     => "MDEyMzQ1Njc4OWFiY2RlZg==",
+        }
+      )
+
+      response.status.should eq(HTTP::Status::GATEWAY_TIMEOUT)
+      response.body.should contain("<h1>504</h1>")
+    ensure
+      proxy.close
+      upstream.close
+    end
+  end
+
   it "returns a bad gateway response for an invalid upstream handshake" do
     upstream = HTTP::Server.new do |context|
       context.response.status = :switching_protocols

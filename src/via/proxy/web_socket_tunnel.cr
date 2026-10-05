@@ -59,7 +59,10 @@ module Via::Proxy
       destination["Upgrade"] = "websocket"
     end
 
-    def connect(upstream : URI) : IO
+    def connect(
+      upstream : URI,
+      timeouts : Routing::Timeouts = Routing::Timeouts.new,
+    ) : IO
       host = upstream.hostname.not_nil!
       tls = upstream.scheme == "https"
       port = upstream.port || (tls ? 443 : 80)
@@ -72,7 +75,9 @@ module Via::Proxy
         end
       {% end %}
 
-      socket = TCPSocket.new(host, port)
+      socket = TCPSocket.new(host, port, connect_timeout: timeouts.connect)
+      socket.read_timeout = timeouts.read if timeouts.read
+      socket.write_timeout = timeouts.write if timeouts.write
       return socket unless tls
 
       {% if flag?(:without_openssl) %}
@@ -122,6 +127,8 @@ module Via::Proxy
           yielded = true
           yield response
         end
+      rescue ex : IO::TimeoutError
+        raise ex
       rescue ex
         raise ex if yielded
 

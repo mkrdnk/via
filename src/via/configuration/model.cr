@@ -1,4 +1,20 @@
 module Via::Configuration
+  class Timeouts
+    include YAML::Serializable
+    include YAML::Serializable::Strict
+
+    getter connect : String?
+    getter read : String?
+    getter write : String?
+
+    def initialize(
+      @connect : String? = nil,
+      @read : String? = nil,
+      @write : String? = nil,
+    )
+    end
+  end
+
   class TLS
     include YAML::Serializable
     include YAML::Serializable::Strict
@@ -35,6 +51,8 @@ module Via::Configuration
 
     @[YAML::Field(key: "static")]
     getter static_config : String | Static | Nil
+
+    getter timeouts : Timeouts?
   end
 
   class Model
@@ -52,6 +70,7 @@ module Via::Configuration
 
     getter routes : Array(Route)?
     getter tls : TLS?
+    getter timeouts : Timeouts?
 
     @[YAML::Field(ignore: true)]
     property config_file : String?
@@ -64,6 +83,7 @@ module Via::Configuration
       @proxy_pass : ProxyPass? = nil,
       @routes : Array(Route)? = nil,
       @tls : TLS? = nil,
+      @timeouts : Timeouts? = nil,
       @host : String? = nil,
       @config_file : String? = nil,
     )

@@ -82,6 +82,58 @@ describe Via::Configuration::Model do
     validated.log_level.should eq(Via::Logging::Level::Warn)
   end
 
+  it "inherits listener timeouts and overrides individual route values" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      timeouts:
+        connect: 5s
+        read: 30s
+        write: 1.5m
+      routes:
+        - path: /api
+          proxy_pass: http://localhost:8000
+          timeouts:
+            connect: 10s
+        - path: /
+          proxy_pass: http://localhost:3000
+      YAML
+
+    routes = config.validate.routes
+    routes[0].timeouts.should eq(
+      Via::RoutingTimeouts.new(10.seconds, 30.seconds, 1.5.minutes)
+    )
+    routes[1].timeouts.should eq(
+      Via::RoutingTimeouts.new(5.seconds, 30.seconds, 1.5.minutes)
+    )
+  end
+
+  it "rejects invalid timeout configuration" do
+    {"0s", "-1s", "30", "1d"}.each do |duration|
+      config = Via::Config.from_yaml <<-YAML
+        listen: ":8080"
+        timeouts:
+          read: #{duration}
+        proxy_pass: http://localhost:3000
+        YAML
+
+      expect_raises(Via::ConfigurationError, "Invalid timeouts.read") do
+        config.validate
+      end
+    end
+
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - proxy_pass: 204
+          timeouts:
+            read: 5s
+      YAML
+
+    expect_raises(Via::ConfigurationError, "timeouts requires an upstream URL") do
+      config.validate
+    end
+  end
+
   it "rejects invalid logging configuration" do
     invalid_level = Via::Config.from_yaml <<-YAML
       listen: ":8080"
@@ -247,6 +299,25 @@ describe Via::Configuration::Model do
       expect_raises(Via::ConfigurationError, "declare debug at most once") do
         Via::ConfigLoader.new(directory).load
       end
+    end
+  end
+
+  it "merges listener timeouts from a configuration fragment" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "00-server.yaml"), <<-YAML)
+        listen: ":8080"
+        timeouts:
+          connect: 5s
+          read: 30s
+        YAML
+      File.write(File.join(directory, "10-route.yaml"), <<-YAML)
+        proxy_pass: http://localhost:3000
+        YAML
+
+      route = Via::ConfigLoader.new(directory).load.validate.routes.first
+      route.timeouts.should eq(
+        Via::RoutingTimeouts.new(connect: 5.seconds, read: 30.seconds)
+      )
     end
   end
 
@@ -1199,6 +1270,46 @@ describe Via::Proxy::Handler do
         allowed = HTTP::Client.get("http://#{proxy_address}/")
         allowed.body.should eq("upstream")
         upstream_requests.get.should eq(1)
+      ensure
+        proxy.close
+      end
+    end
+  end
+
+  it "applies route read timeouts independently for the same upstream" do
+    upstream = HTTP::Server.new do |context|
+      sleep 150.milliseconds
+      context.response << "eventual response"
+    end
+
+    with_server(upstream) do |upstream_address|
+      routes = Via::Config.from_yaml(<<-YAML).validate.routes
+        listen: ":8080"
+        routes:
+          - path: /short
+            proxy_pass: http://#{upstream_address}
+            timeouts:
+              read: 50ms
+          - path: /long
+            proxy_pass: http://#{upstream_address}
+            timeouts:
+              read: 1s
+        YAML
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        routes
+      )
+      proxy = Via::Server.new(config, IO::Memory.new)
+      proxy_address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        timed_out = HTTP::Client.get("http://#{proxy_address}/short")
+        timed_out.status.should eq(HTTP::Status::GATEWAY_TIMEOUT)
+
+        completed = HTTP::Client.get("http://#{proxy_address}/long")
+        completed.status.should eq(HTTP::Status::OK)
+        completed.body.should eq("eventual response")
       ensure
         proxy.close
       end

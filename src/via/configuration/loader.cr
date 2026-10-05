@@ -63,6 +63,7 @@ module Via::Configuration
       proxy_passes = fragments.compact_map(&.proxy_pass)
       routes = fragments.flat_map { |fragment| fragment.routes || [] of Route }
       tls_configs = fragments.compact_map(&.tls)
+      timeout_configs = fragments.compact_map(&.timeouts)
       config_files = fragments.compact_map(&.config_file).uniq
 
       normalized_listens = fragments.compact_map do |fragment|
@@ -110,6 +111,12 @@ module Via::Configuration
         )
       end
 
+      if timeout_configs.size > 1
+        raise Error.new(
+          "Configuration directory must declare timeouts at most once, found #{timeout_configs.size}"
+        )
+      end
+
       Model.new(
         listen: listens.first?,
         host: hosts.first?,
@@ -119,6 +126,7 @@ module Via::Configuration
         proxy_pass: proxy_passes.first?,
         routes: routes.empty? ? nil : routes,
         tls: tls_configs.first?,
+        timeouts: timeout_configs.first?,
         config_file: config_files.size == 1 ? config_files.first : @path
       )
     end

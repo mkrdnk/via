@@ -12,6 +12,7 @@ module Via
   alias ConfigValidator = Configuration::Validator
   alias ConfigurationError = Configuration::Error
   alias ListenAddress = Configuration::ListenAddress
+  alias RoutingTimeouts = Routing::Timeouts
   alias StaticConfig = Configuration::Static
   alias TlsConfig = Configuration::TLS
   alias ValidatedConfig = Configuration::Validated
