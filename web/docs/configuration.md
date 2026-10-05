@@ -36,6 +36,33 @@ proxy_pass: https://$host
 validation. It is rejected when the route has no `host`, so request input can
 never select an arbitrary upstream.
 
+## Upstream timeouts
+
+Set connection, read, and write timeouts for proxied upstream requests:
+
+```yaml
+listen: ":443"
+timeouts:
+  connect: 5s
+  read: 30s
+  write: 30s
+
+routes:
+  - path: /
+    proxy_pass: http://localhost:3000
+    timeouts:
+      connect: 10s
+```
+
+Top-level values apply to every proxy route. A route-level `timeouts` block
+overrides only the fields it contains, so this example uses a 10-second connect
+timeout and inherits the 30-second read and write timeouts.
+
+Durations must be positive and use `ms`, `s`, `m`, or `h`; decimal values such
+as `1.5s` are accepted. Omitted fields keep Crystal's default of no timeout.
+Timeouts cover HTTP traffic and WebSocket connections. A timeout before the
+downstream response starts returns `504 Gateway Timeout`.
+
 ## Logging
 
 Operational logs go to stderr at `INFO` level by default. Set `log_file` to
@@ -181,10 +208,10 @@ proxy_pass: http://localhost:3000
 ```
 
 Within each listener, `host`, `debug`, `log_file`, `log_level`, top-level
-`proxy_pass`, and `tls` may each be declared at most once. The normal validation
-rules are applied after merging. A file without `listen` is rejected when
-multiple listeners exist because Via cannot determine which listener should
-receive it.
+`proxy_pass`, `timeouts`, and `tls` may each be declared at most once. The normal
+validation rules are applied after merging. A file without `listen` is rejected
+when multiple listeners exist because Via cannot determine which listener
+should receive it.
 
 See [Reload configuration](hot-reload.md) for reload behavior.
 

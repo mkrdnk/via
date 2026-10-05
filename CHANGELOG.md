@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -->
 
+## VERSION - [unreleased]
+
+### Added
+
+- Configurable upstream connect, read, and write timeouts with listener defaults
+  and per-route overrides for HTTP and WebSocket proxying.
+
 ## 0.3.1 - 2026-10-04
 
 ### Changed

@@ -61,6 +61,7 @@ journalctl -u via -o cat | grep 'request_id="fbd06c3469d1c645432441b7816b52ad"'
 | `416 Range Not Satisfiable` | A static byte range is invalid or unavailable. |
 | `502 Bad Gateway` | The upstream connection or WebSocket handshake failed before a valid response. |
 | `503 Service Unavailable` | Debug mode is waiting for a valid replacement configuration. |
+| `504 Gateway Timeout` | A configured upstream timeout elapsed before the response started. |
 
 If a connection fails after response bytes or a WebSocket upgrade have started,
 Via terminates the stream because it can no longer replace the response with an
