@@ -420,6 +420,64 @@ describe "WebSocket proxying" do
     end
   end
 
+  {% unless flag?(:without_openssl) %}
+    it "closes the secure upstream socket when its handshake times out" do
+      upstream_closed = Channel(Exception?).new(1)
+      upstream = TCPServer.new("127.0.0.1", 0)
+      upstream_address = upstream.local_address
+      spawn do
+        client = upstream.accept
+        begin
+          buffer = Bytes.new(4096)
+          while client.read(buffer) > 0
+          end
+          upstream_closed.send(nil)
+        rescue ex
+          upstream_closed.send(ex)
+        ensure
+          client.close
+        end
+      end
+
+      route = Via::Route.new(
+        nil,
+        "/",
+        URI.parse("https://#{upstream_address}"),
+        timeouts: Via::RoutingTimeouts.new(read: 50.milliseconds)
+      )
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [route]
+      )
+      proxy = Via::Server.new(config, IO::Memory.new)
+      proxy_address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        response = HTTP::Client.get(
+          "http://#{proxy_address}/socket",
+          headers: HTTP::Headers{
+            "Connection"            => "Upgrade",
+            "Upgrade"               => "websocket",
+            "Sec-WebSocket-Version" => "13",
+            "Sec-WebSocket-Key"     => "MDEyMzQ1Njc4OWFiY2RlZg==",
+          }
+        )
+        response.status.should eq(HTTP::Status::GATEWAY_TIMEOUT)
+
+        select
+        when error = upstream_closed.receive
+          error.should be_nil
+        when timeout(1.second)
+          fail "timed-out TLS handshake left the upstream socket open"
+        end
+      ensure
+        proxy.close
+        upstream.close
+      end
+    end
+  {% end %}
+
   it "keeps an upgraded connection open across a configuration reload" do
     web_socket_handler = HTTP::WebSocketHandler.new do |socket, _context|
       socket.on_message { |message| socket.send("old:#{message}") }

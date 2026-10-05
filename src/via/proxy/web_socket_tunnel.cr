@@ -94,6 +94,9 @@ module Via::Proxy
         rescue ex : OpenSSL::Error
           socket.close
           raise Socket::Error.new("TLS handshake failed: #{ex.message}")
+        rescue ex
+          socket.close
+          raise ex
         end
       {% end %}
     end
