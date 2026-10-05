@@ -19,6 +19,7 @@ module Via::Proxy
       routes : Enumerable(Routing::Route),
       @logger : Logging::Logger,
       @scheme : String = "http",
+      @web_sockets : Runtime::WebSocketRegistry = Runtime::WebSocketRegistry.new,
     )
       route_list = routes.to_a
       @router = Routing::Router.new(route_list)
@@ -169,7 +170,8 @@ module Via::Proxy
                 upstream_io,
                 @logger,
                 id,
-                upstream_name
+                upstream_name,
+                @web_sockets
               )
               upgraded = true
               transfer.downstream_started = true

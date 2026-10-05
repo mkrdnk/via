@@ -15,6 +15,7 @@ module Via::Configuration
       tls = validate_tls
       log_file = validate_log_file
       log_level = validate_log_level
+      websocket_shutdown_timeout = validate_websocket_shutdown_timeout
       Validated.new(
         listen,
         routes,
@@ -22,7 +23,8 @@ module Via::Configuration
         log_file,
         log_level,
         @config.config_file,
-        @config.debug || false
+        @config.debug || false,
+        websocket_shutdown_timeout
       )
     end
 
@@ -59,6 +61,12 @@ module Via::Configuration
       raise Error.new(
         "Invalid log_level: #{value} (expected DEBUG, INFO, WARN, or ERROR)"
       )
+    end
+
+    def validate_websocket_shutdown_timeout : Time::Span
+      value = @config.shutdown.try(&.websocket_timeout)
+      parse_duration(value, "shutdown.websocket_timeout") ||
+        DEFAULT_WEBSOCKET_SHUTDOWN_TIMEOUT
     end
 
     private def build_routes : Array(Routing::Route)

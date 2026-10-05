@@ -63,6 +63,27 @@ as `1.5s` are accepted. Omitted fields keep Crystal's default of no timeout.
 Timeouts cover HTTP traffic and WebSocket connections. A timeout before the
 downstream response starts returns `504 Gateway Timeout`.
 
+## Graceful shutdown
+
+Graceful shutdown is enabled by default and needs no configuration. On
+`SIGINT` or `SIGTERM`, Via stops accepting connections, waits for active HTTP
+requests, gives upgraded WebSocket connections five seconds to finish, closes
+the remaining WebSockets and upstream connection pools, and exits.
+
+To change only the WebSocket grace period for a listener:
+
+```yaml
+listen: ":8080"
+shutdown:
+  websocket_timeout: 8s
+proxy_pass: http://localhost:3000
+```
+
+`websocket_timeout` accepts the same positive duration syntax as upstream
+timeouts. The default five-second grace period fits within Docker's default
+ten-second stop timeout. Active HTTP requests are allowed to finish before this
+period starts, so configure the orchestrator's total stop timeout accordingly.
+
 ## Logging
 
 Operational logs go to stderr at `INFO` level by default. Set `log_file` to
@@ -208,10 +229,10 @@ proxy_pass: http://localhost:3000
 ```
 
 Within each listener, `host`, `debug`, `log_file`, `log_level`, top-level
-`proxy_pass`, `timeouts`, and `tls` may each be declared at most once. The normal
-validation rules are applied after merging. A file without `listen` is rejected
-when multiple listeners exist because Via cannot determine which listener
-should receive it.
+`proxy_pass`, `timeouts`, `shutdown`, and `tls` may each be declared at most
+once. The normal validation rules are applied after merging. A file without
+`listen` is rejected when multiple listeners exist because Via cannot determine
+which listener should receive it.
 
 See [Reload configuration](hot-reload.md) for reload behavior.
 

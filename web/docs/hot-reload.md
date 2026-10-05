@@ -20,7 +20,8 @@ Via can reload:
 - routes and upstreams;
 - static targets;
 - certificate and key paths;
-- `log_file` and `log_level`.
+- `log_file` and `log_level`;
+- `shutdown.websocket_timeout`.
 
 Requests and WebSocket connections that are already active continue normally.
 New requests use the replacement configuration.

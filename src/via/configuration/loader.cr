@@ -64,6 +64,7 @@ module Via::Configuration
       routes = fragments.flat_map { |fragment| fragment.routes || [] of Route }
       tls_configs = fragments.compact_map(&.tls)
       timeout_configs = fragments.compact_map(&.timeouts)
+      shutdown_configs = fragments.compact_map(&.shutdown)
       config_files = fragments.compact_map(&.config_file).uniq
 
       normalized_listens = fragments.compact_map do |fragment|
@@ -117,6 +118,12 @@ module Via::Configuration
         )
       end
 
+      if shutdown_configs.size > 1
+        raise Error.new(
+          "Configuration directory must declare shutdown at most once, found #{shutdown_configs.size}"
+        )
+      end
+
       Model.new(
         listen: listens.first?,
         host: hosts.first?,
@@ -127,6 +134,7 @@ module Via::Configuration
         routes: routes.empty? ? nil : routes,
         tls: tls_configs.first?,
         timeouts: timeout_configs.first?,
+        shutdown: shutdown_configs.first?,
         config_file: config_files.size == 1 ? config_files.first : @path
       )
     end

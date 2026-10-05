@@ -1,4 +1,5 @@
 require "atomic"
+require "wait_group"
 
 module Via::Configuration
   class Watcher
@@ -12,14 +13,31 @@ module Via::Configuration
       @additional_paths : (-> Array(String))? = nil,
     )
       @stopped = Atomic(Bool).new(false)
+      @lifecycle_mutex = Mutex.new
+      @started = false
+      @running = false
+      @done = WaitGroup.new(1)
     end
 
     def start(&on_change : ->) : Nil
-      spawn watch(on_change)
+      @lifecycle_mutex.synchronize do
+        raise "Configuration watcher is already started" if @started
+
+        @started = true
+        @running = true
+      end
+      spawn do
+        watch(on_change)
+      ensure
+        @done.done
+        @lifecycle_mutex.synchronize { @running = false }
+      end
     end
 
     def stop : Nil
       @stopped.set(true)
+      running = @lifecycle_mutex.synchronize { @running }
+      @done.wait if running
     end
 
     private def watch(on_change : ->) : Nil

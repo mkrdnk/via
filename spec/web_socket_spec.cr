@@ -521,4 +521,89 @@ describe "WebSocket proxying" do
       end
     end
   end
+
+  it "gives WebSockets their configured grace period during shutdown" do
+    web_socket_handler = HTTP::WebSocketHandler.new do |socket, _context|
+      socket.on_message { |message| socket.send("echo:#{message}") }
+    end
+    upstream = HTTP::Server.new([web_socket_handler])
+
+    with_server(upstream) do |upstream_address|
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))],
+        websocket_shutdown_timeout: 1.second
+      )
+      group = Via::ServerGroup.new([Via::Server.new(config, IO::Memory.new)])
+      proxy_address = group.bind.first
+      spawn group.listen
+      socket = HTTP::WebSocket.new("127.0.0.1", "/", proxy_address.port)
+      shutdown_done = Channel(Nil).new(1)
+
+      begin
+        group.stop
+        spawn do
+          group.shutdown
+          shutdown_done.send(nil)
+        end
+
+        socket.send("during-drain")
+        socket.receive.should eq("echo:during-drain")
+        select
+        when shutdown_done.receive
+          fail "shutdown did not preserve the WebSocket grace period"
+        else
+        end
+
+        socket.close
+        select
+        when shutdown_done.receive
+        when timeout(1.second)
+          fail "shutdown did not finish after the WebSocket closed"
+        end
+      ensure
+        begin
+          socket.close unless socket.closed?
+        rescue IO::Error
+          # The proxy can close the transport when its grace period expires.
+        end
+        group.close
+      end
+    end
+  end
+
+  it "closes WebSockets when the shutdown grace period expires" do
+    web_socket_handler = HTTP::WebSocketHandler.new do |_socket, _context|
+    end
+    upstream = HTTP::Server.new([web_socket_handler])
+
+    with_server(upstream) do |upstream_address|
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))],
+        websocket_shutdown_timeout: 50.milliseconds
+      )
+      group = Via::ServerGroup.new([Via::Server.new(config, IO::Memory.new)])
+      proxy_address = group.bind.first
+      spawn group.listen
+      socket = HTTP::WebSocket.new("127.0.0.1", "/", proxy_address.port)
+
+      begin
+        started_at = Time.instant
+        group.shutdown
+        elapsed = Time.instant - started_at
+
+        elapsed.should be >= 40.milliseconds
+        elapsed.should be < 1.second
+        socket.receive?.should be_nil
+      ensure
+        begin
+          socket.close unless socket.closed?
+        rescue IO::Error
+          # The proxy closes this transport when the grace period expires.
+        end
+        group.close
+      end
+    end
+  end
 end

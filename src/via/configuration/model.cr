@@ -15,6 +15,16 @@ module Via::Configuration
     end
   end
 
+  class Shutdown
+    include YAML::Serializable
+    include YAML::Serializable::Strict
+
+    getter websocket_timeout : String?
+
+    def initialize(@websocket_timeout : String? = nil)
+    end
+  end
+
   class TLS
     include YAML::Serializable
     include YAML::Serializable::Strict
@@ -71,6 +81,7 @@ module Via::Configuration
     getter routes : Array(Route)?
     getter tls : TLS?
     getter timeouts : Timeouts?
+    getter shutdown : Shutdown?
 
     @[YAML::Field(ignore: true)]
     property config_file : String?
@@ -86,6 +97,7 @@ module Via::Configuration
       @timeouts : Timeouts? = nil,
       @host : String? = nil,
       @config_file : String? = nil,
+      @shutdown : Shutdown? = nil,
     )
     end
 

@@ -1,5 +1,49 @@
 require "./spec_helper"
 
+private class BlockingFlushIO < IO
+  getter flush_started = Channel(Nil).new(1)
+  getter release_flush = Channel(Nil).new(1)
+  getter? closed = false
+
+  def read(slice : Bytes) : Int32
+    0
+  end
+
+  def write(slice : Bytes) : Nil
+  end
+
+  def flush : Nil
+    @flush_started.send(nil)
+    @release_flush.receive
+  end
+
+  def close : Nil
+    @closed = true
+  end
+end
+
+private class ExplodingLogIO < IO
+  property explode = false
+
+  def initialize
+    @memory = IO::Memory.new
+  end
+
+  def read(slice : Bytes) : Int32
+    @memory.read(slice)
+  end
+
+  def write(slice : Bytes) : Nil
+    raise "injected logging failure" if @explode
+
+    @memory.write(slice)
+  end
+
+  def flush : Nil
+    @memory.flush
+  end
+end
+
 describe Via::Configuration::Model do
   it "loads and validates the minimal configuration" do
     config = Via::Config.from_yaml <<-YAML
@@ -12,6 +56,7 @@ describe Via::Configuration::Model do
     validated.routes.should eq([
       Via::Route.new(nil, "/", URI.parse("http://localhost:3000")),
     ])
+    validated.websocket_shutdown_timeout.should eq(5.seconds)
   end
 
   it "applies top-level host to the single upstream route" do
@@ -131,6 +176,27 @@ describe Via::Configuration::Model do
 
     expect_raises(Via::ConfigurationError, "timeouts requires an upstream URL") do
       config.validate
+    end
+  end
+
+  it "configures the WebSocket shutdown grace period" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      shutdown:
+        websocket_timeout: 750ms
+      proxy_pass: http://localhost:3000
+      YAML
+
+    config.validate.websocket_shutdown_timeout.should eq(750.milliseconds)
+
+    invalid = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      shutdown:
+        websocket_timeout: 0s
+      proxy_pass: http://localhost:3000
+      YAML
+    expect_raises(Via::ConfigurationError, "Invalid shutdown.websocket_timeout") do
+      invalid.validate
     end
   end
 
@@ -670,9 +736,99 @@ describe Via::Configuration::Watcher do
       end
     end
   end
+
+  it "waits for an in-flight reload callback when stopped" do
+    with_temp_directory do |directory|
+      path = File.join(directory, "via.yaml")
+      File.write(path, "listen: \":8080\"\n")
+      callback_started = Channel(Nil).new(1)
+      release_callback = Channel(Nil).new(1)
+      stopped = Channel(Nil).new(1)
+      watcher = Via::ConfigWatcher.new(path, 10.milliseconds, 20.milliseconds)
+      watcher.start do
+        callback_started.send(nil)
+        release_callback.receive
+      end
+
+      begin
+        sleep 20.milliseconds
+        File.write(path, "listen: \":8081\"\n")
+        select
+        when callback_started.receive
+        when timeout(1.second)
+          fail "configuration watcher did not enter its callback"
+        end
+
+        spawn do
+          watcher.stop
+          stopped.send(nil)
+        end
+        select
+        when stopped.receive
+          fail "watcher stopped before its active callback completed"
+        else
+        end
+
+        release_callback.send(nil)
+        select
+        when stopped.receive
+        when timeout(1.second)
+          fail "watcher did not stop after its callback completed"
+        end
+      ensure
+        select
+        when release_callback.send(nil)
+        else
+        end
+        watcher.stop
+      end
+    end
+  end
 end
 
 describe Via::Runtime::State do
+  it "waits until the downstream response is finalized and flushed" do
+    state = Via::RuntimeState.new(IO::Memory.new)
+    state.apply(Via::ValidatedConfig.new(
+      Via::ListenAddress.new("127.0.0.1", 0),
+      [Via::Route.new(nil, "/", nil, response_status: 204)]
+    ))
+    downstream = BlockingFlushIO.new
+    response = HTTP::Server::Response.new(downstream)
+    request = HTTP::Request.new("GET", "/", HTTP::Headers{"Host" => "localhost"})
+    context = HTTP::Server::Context.new(request, response)
+    drained = Channel(Nil).new(1)
+
+    state.call(context)
+    spawn do
+      state.wait_for_requests
+      drained.send(nil)
+    end
+    spawn response.output.close
+
+    downstream.flush_started.receive
+    select
+    when drained.receive
+      fail "request drained before its downstream response was flushed"
+    else
+    end
+
+    downstream.release_flush.send(nil)
+    select
+    when drained.receive
+    when timeout(1.second)
+      fail "request did not drain after its downstream response was flushed"
+    end
+  ensure
+    downstream.try do |io|
+      select
+      when io.release_flush.send(nil)
+      else
+      end
+    end
+    state.try(&.close)
+  end
+
   it "atomically swaps proxy generations" do
     first_entered = Channel(Nil).new(1)
     release_first = Channel(Nil).new(1)
@@ -921,6 +1077,49 @@ describe Via::Runtime::State do
 end
 
 describe Via::ServerGroup do
+  it "can be stopped before its listener fibers start" do
+    config = Via::ValidatedConfig.new(
+      Via::ListenAddress.new("127.0.0.1", 0),
+      [Via::Route.new(nil, "/", nil, response_status: 204)]
+    )
+    group = Via::ServerGroup.new([Via::Server.new(config, IO::Memory.new)])
+    group.bind
+
+    group.stop
+    group.listen
+    group.shutdown
+  ensure
+    group.try(&.close)
+  end
+
+  it "does not hang after an unhandled request exception" do
+    log = ExplodingLogIO.new
+    config = Via::ValidatedConfig.new(
+      Via::ListenAddress.new("127.0.0.1", 0),
+      [Via::Route.new(nil, "/", nil, response_status: 204)]
+    )
+    group = Via::ServerGroup.new([Via::Server.new(config, log)])
+    address = group.bind.first
+    spawn group.listen
+    log.explode = true
+    shutdown_done = Channel(Nil).new(1)
+
+    HTTP::Client.get("http://#{address}/").status.should eq(
+      HTTP::Status::INTERNAL_SERVER_ERROR
+    )
+    spawn do
+      group.shutdown
+      shutdown_done.send(nil)
+    end
+    select
+    when shutdown_done.receive
+    when timeout(1.second)
+      fail "shutdown hung after an unhandled request exception"
+    end
+  ensure
+    group.try(&.close)
+  end
+
   it "serves independent configurations on multiple listeners" do
     first_upstream = HTTP::Server.new { |context| context.response << "first-listener" }
     second_upstream = HTTP::Server.new { |context| context.response << "second-listener" }
@@ -948,6 +1147,81 @@ describe Via::ServerGroup do
         ensure
           group.close
         end
+      end
+    end
+  end
+
+  it "stops accepting connections and lets active HTTP requests finish" do
+    entered = Channel(Nil).new(1)
+    release = Channel(Nil).new(1)
+    result = Channel(String | Exception).new(1)
+    shutdown_done = Channel(Nil).new(1)
+    second_shutdown_done = Channel(Nil).new(1)
+    upstream = HTTP::Server.new do |context|
+      entered.send(nil)
+      release.receive
+      context.response << "finished"
+    end
+
+    with_server(upstream) do |upstream_address|
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        [Via::Route.new(nil, "/", URI.parse("http://#{upstream_address}"))]
+      )
+      group = Via::ServerGroup.new([Via::Server.new(config, IO::Memory.new)])
+      address = group.bind.first
+      spawn group.listen
+
+      begin
+        spawn do
+          result.send(HTTP::Client.get("http://#{address}/").body)
+        rescue ex
+          result.send(ex)
+        end
+        entered.receive
+
+        group.stop
+        expect_raises(Socket::ConnectError) do
+          TCPSocket.new(address.address, address.port)
+        end
+
+        spawn do
+          group.shutdown
+          shutdown_done.send(nil)
+        end
+        spawn do
+          group.shutdown
+          second_shutdown_done.send(nil)
+        end
+        select
+        when shutdown_done.receive
+          fail "shutdown finished before its active HTTP request"
+        else
+        end
+        select
+        when second_shutdown_done.receive
+          fail "concurrent shutdown returned before the active shutdown"
+        else
+        end
+
+        release.send(nil)
+        result.receive.should eq("finished")
+        select
+        when shutdown_done.receive
+        when timeout(1.second)
+          fail "shutdown did not finish after its active HTTP request"
+        end
+        select
+        when second_shutdown_done.receive
+        when timeout(1.second)
+          fail "concurrent shutdown did not observe shutdown completion"
+        end
+      ensure
+        select
+        when release.send(nil)
+        else
+        end
+        group.close
       end
     end
   end

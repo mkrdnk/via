@@ -9,6 +9,8 @@ module Via
       @tls = !config.tls.nil?
       @http_server = ::HTTP::Server.new { |context| @state.call(context) }
       @address = nil
+      @mutex = Mutex.new
+      @stopped = false
     end
 
     def initialize(
@@ -18,6 +20,8 @@ module Via
     )
       @http_server = ::HTTP::Server.new { |context| @state.call(context) }
       @address = nil
+      @mutex = Mutex.new
+      @stopped = false
     end
 
     def bind : Socket::IPAddress
@@ -39,13 +43,42 @@ module Via
     end
 
     def listen : Nil
+      return if @mutex.synchronize { @stopped }
+
       bind unless @address
       @http_server.listen
+    rescue ex
+      raise ex unless @mutex.synchronize { @stopped }
+    end
+
+    def stop : Nil
+      @mutex.synchronize do
+        return if @stopped
+
+        @stopped = true
+        @http_server.close
+      end
+    end
+
+    def begin_shutdown : Nil
+      @state.begin_shutdown
+    end
+
+    def wait_for_requests : Nil
+      @state.wait_for_requests
+    end
+
+    def drain_web_sockets : Nil
+      @state.drain_web_sockets
+    end
+
+    def finish_shutdown : Nil
+      @state.close
     end
 
     def close : Nil
-      @http_server.close
-      @state.close
+      stop
+      finish_shutdown
     end
   end
 end

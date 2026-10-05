@@ -147,19 +147,32 @@ module Via::Proxy
       logger : Logging::Logger,
       request_id : String,
       upstream_name : String,
+      registry : Runtime::WebSocketRegistry,
     ) : Nil
-      response.upgrade do |downstream|
-        logger.debug(
-          "websocket.opened",
-          request_id: request_id,
-          upstream: upstream_name
-        )
-        relay(downstream, upstream)
-        logger.debug(
-          "websocket.closed",
-          request_id: request_id,
-          upstream: upstream_name
-        )
+      entry = registry.reserve(upstream)
+      begin
+        response.upgrade do |downstream|
+          next unless registry.attach(entry, downstream)
+
+          begin
+            logger.debug(
+              "websocket.opened",
+              request_id: request_id,
+              upstream: upstream_name
+            )
+            relay(downstream, upstream)
+            logger.debug(
+              "websocket.closed",
+              request_id: request_id,
+              upstream: upstream_name
+            )
+          ensure
+            registry.release(entry)
+          end
+        end
+      rescue ex
+        registry.release(entry)
+        raise ex
       end
     end
 

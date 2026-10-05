@@ -98,4 +98,6 @@ with `DEBUG` unless `--log-level` provides an explicit CLI override. See
 ## Exit behavior
 
 Configuration and listener errors produce a non-zero exit status. `SIGINT` and
-`SIGTERM` stop all listeners gracefully.
+`SIGTERM` stop all listeners gracefully: Via stops accepting connections,
+finishes active HTTP requests, drains WebSockets for their configured grace
+period, and then closes upstream pools.

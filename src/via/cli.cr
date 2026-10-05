@@ -163,13 +163,13 @@ module Via
       reloader.set_dependencies(models)
       reloader.start
 
-      Signal::INT.trap { server_group.close }
-      Signal::TERM.trap { server_group.close }
+      Signal::INT.trap { server_group.stop }
+      Signal::TERM.trap { server_group.stop }
       begin
         server_group.listen
       ensure
         reloader.stop
-        server_group.close
+        server_group.shutdown
       end
       0
     end

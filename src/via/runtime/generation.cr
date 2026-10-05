@@ -5,8 +5,9 @@ module Via::Runtime
       routes : Array(Routing::Route),
       logger : Logging::Logger,
       scheme : String,
+      web_sockets : WebSocketRegistry,
     )
-      @proxy = Proxy::Handler.new(routes, logger, scheme)
+      @proxy = Proxy::Handler.new(routes, logger, scheme, web_sockets)
       @mutex = Mutex.new
       @active_requests = 0
       @retired = false
