@@ -49,7 +49,26 @@ Before using Via in production, remove that setting from
 `/etc/via/example-config.yaml`. Via applies the change automatically without a
 service restart.
 
-### Certbot certificate permissions
+## Operate the service
+
+Validate the complete configuration directory before or after an edit:
+
+```sh
+sudo via check -c /etc/via
+```
+
+Inspect service state and operational logs:
+
+```sh
+systemctl status via
+journalctl -u via -o cat
+```
+
+Valid route and certificate changes reload automatically. Use
+`sudo systemctl restart via` only for changes that alter listener topology, as
+described in [Reload configuration](hot-reload.md).
+
+## Certbot certificate permissions
 
 Certbot normally protects `/etc/letsencrypt/live/` from service accounts. Copy
 the certificate and key into a directory readable only by `root` and the `via`
@@ -93,11 +112,5 @@ Install the script as an executable file under
 `/etc/letsencrypt/renewal-hooks/deploy/`. Via watches the configured certificate
 and key files and loads the new pair after the hook replaces them.
 
-Inspect the running service with:
-
-```sh
-systemctl status via
-```
-
-Via writes operational records to the journal by default. See
-[Logs and troubleshooting](logging.md) for useful `journalctl` commands.
+See [Logs and troubleshooting](logging.md) for request tracing and additional
+`journalctl` commands.

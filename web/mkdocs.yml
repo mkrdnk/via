@@ -11,16 +11,17 @@ nav:
   - Overview: index.md
   - Install and run: getting-started.md
   - Configure:
-      - Configuration: configuration.md
+      - Routes and configuration: configuration.md
       - Proxying and WebSockets: proxying.md
-      - Static files: static-files.md
       - TLS: tls.md
-  - Operate:
-      - Command line: cli.md
-      - Run in a container: container.md
+      - Static files: static-files.md
+  - Deploy:
       - Run as a service: service.md
+      - Run in a container: container.md
+  - Operate:
       - Reload configuration: hot-reload.md
       - Logs and troubleshooting: logging.md
+      - CLI reference: cli.md
 
 theme:
   name: readthedocs

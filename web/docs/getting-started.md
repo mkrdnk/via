@@ -1,4 +1,11 @@
-# Getting started
+# Install and run
+
+Choose the installation method that fits the deployment:
+
+- DEB or RPM packages are recommended for systemd hosts;
+- the binary archive works without package installation;
+- the installer is a fallback for a quick setup;
+- the container image is covered in [Run in a container](container.md).
 
 ## Install a release
 
@@ -72,11 +79,18 @@ proxy_pass: http://localhost:3000
 ## Run Via
 
 ```sh
+via check -c via.yaml
 via run -c via.yaml
 ```
 
 Requests to `http://localhost:8080` are now proxied to
 `http://localhost:3000`.
+
+Confirm it from another shell:
+
+```sh
+curl http://localhost:8080/
+```
 
 The CLI also exposes:
 
@@ -87,6 +101,11 @@ via --help
 via --version
 ```
 
-Continue with [Configuration](configuration.md) to add routes, TLS, logging, or
-multiple listeners. For a long-running installation, see
-[Run as a service](service.md).
+## Next steps
+
+- [Add host and path routes](configuration.md#routes)
+- [Strip a route prefix](configuration.md#path-matching)
+- [Proxy a WebSocket](proxying.md#websockets)
+- [Enable TLS](tls.md)
+- [Run under systemd](service.md)
+- [Trace a failed request](logging.md#trace-a-failed-request)

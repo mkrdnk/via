@@ -34,6 +34,51 @@ Via overwrites incoming `X-Forwarded-Host` and `X-Forwarded-Proto` values.
 An existing `X-Forwarded-For` chain is retained and the direct peer address is
 appended to it.
 
+## WebSockets
+
+WebSocket proxying is automatic for routes with an HTTP or HTTPS upstream. No
+route-specific option is required:
+
+```yaml
+routes:
+  - path: /socket
+    proxy_pass: http://localhost:3000
+```
+
+Via recognizes an HTTP/1.1 `GET` request as a WebSocket handshake when it
+contains both `Upgrade: websocket` and the `Upgrade` token in `Connection`. It
+then:
+
+1. forwards the handshake with the normal `Host`, `X-Forwarded-*`, and
+   `X-Request-ID` policy;
+2. preserves `Sec-WebSocket-*` headers, including extension and subprotocol
+   negotiation;
+3. returns the upstream `101 Switching Protocols` response;
+4. relays traffic in both directions until either connection closes.
+
+Because Via relays the upgraded stream without decoding WebSocket frames, text,
+binary, continuation, ping, pong, and close frames pass through unchanged.
+Negotiated extensions are transparent as well.
+
+An upstream HTTP rejection such as `401 Unauthorized` is returned as a normal
+HTTP response, including its body. A connection or handshake failure before a
+response produces `502 Bad Gateway`. Downstream TLS termination and HTTPS
+upstreams work with WebSockets in the same way as ordinary requests.
+
+## Body streaming
+
+Via does not read a complete upload or download into memory before forwarding
+it. Request and response bodies begin flowing as soon as data is available.
+
+`Content-Length` is preserved when it is known and valid. Bodies without a
+known length use HTTP/1.1 chunked framing.
+
+If the downstream client disconnects, Via stops the transfer and discards the
+affected upstream connection. If an upstream disconnects before returning a
+response, Via returns `502 Bad Gateway`. Once response bytes have started,
+an upstream failure terminates the partial response because its status can no
+longer be replaced.
+
 ## Route header rules
 
 Proxy routes can set or remove end-to-end headers in either direction:
@@ -96,51 +141,6 @@ framing instead of forwarding the original chunks.
 End-to-end request and response headers are otherwise preserved unless changed
 by the selected route's header rules.
 
-## WebSockets
-
-WebSocket proxying is automatic for routes with an HTTP or HTTPS upstream. No
-route-specific option is required:
-
-```yaml
-routes:
-  - path: /socket
-    proxy_pass: http://localhost:3000
-```
-
-Via recognizes an HTTP/1.1 `GET` request as a WebSocket handshake when it
-contains both `Upgrade: websocket` and the `Upgrade` token in `Connection`. It
-then:
-
-1. forwards the handshake with the normal `Host`, `X-Forwarded-*`, and
-   `X-Request-ID` policy;
-2. preserves `Sec-WebSocket-*` headers, including extension and subprotocol
-   negotiation;
-3. returns the upstream `101 Switching Protocols` response;
-4. relays traffic in both directions until either connection closes.
-
-Because Via relays the upgraded stream without decoding WebSocket frames, text,
-binary, continuation, ping, pong, and close frames pass through unchanged.
-Negotiated extensions are transparent as well.
-
-An upstream HTTP rejection such as `401 Unauthorized` is returned as a normal
-HTTP response, including its body. A connection or handshake failure before a
-response produces `502 Bad Gateway`. Downstream TLS termination and HTTPS
-upstreams work with WebSockets in the same way as ordinary requests.
-
-## Body streaming
-
-Via does not read a complete upload or download into memory before forwarding
-it. Request and response bodies begin flowing as soon as data is available.
-
-`Content-Length` is preserved when it is known and valid. Bodies without a
-known length use HTTP/1.1 chunked framing.
-
-If the downstream client disconnects, Via stops the transfer and discards the
-affected upstream connection. If an upstream disconnects before returning a
-response, Via returns `502 Bad Gateway`. Once response bytes have started,
-an upstream failure terminates the partial response because its status can no
-longer be replaced.
-
 ## Redirects
 
 Via forwards upstream redirect statuses and `Location` headers unchanged. It
@@ -148,5 +148,5 @@ does not rewrite absolute or relative redirect targets.
 
 ## Limitations
 
-Via does not currently provide configurable request or response header rules,
-upstream timeouts, retries, or load balancing.
+Via does not currently provide retries, load balancing, response caching, or
+arbitrary body rewriting.
