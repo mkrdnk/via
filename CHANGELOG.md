@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Top-level `enable: false` for excluding individual configuration files before
+  listener grouping and validation.
 - A consistent `Server: Via` identity header on all responses.
 - Route-level request and response header `set` and `remove` rules for HTTP and
   WebSocket proxying.

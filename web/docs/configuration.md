@@ -3,6 +3,28 @@
 Via reads a strict YAML configuration. Unknown fields and invalid values cause
 startup to fail with a configuration error.
 
+## Disabling a configuration
+
+Configurations are enabled by default. Set `enable: false` at the top level to
+skip a file without deleting or renaming it:
+
+```yaml
+enable: false
+listen: ":80"
+proxy_pass: http://localhost:3000
+```
+
+Via parses the file as strict YAML, then excludes it before listener and route
+validation. This means a disabled file does not need a complete `listen` or
+route configuration, although its fields must still use valid YAML types and
+known names.
+
+When `-c` points to a directory, disabled files are left out before fragments
+are grouped and merged. Other enabled listeners and fragments continue to run.
+If every file is disabled, `via run` exits successfully without binding a
+listener, and `via check` reports the configuration as valid with no enabled
+listeners.
+
 ## Single upstream
 
 The smallest configuration sends every request to one upstream:
@@ -317,7 +339,8 @@ Within each listener, `host`, `debug`, `log_file`, `log_level`, top-level
 `proxy_pass`, `timeouts`, `shutdown`, and `tls` may each be declared at most
 once. The normal validation rules are applied after merging. A file without
 `listen` is rejected when multiple listeners exist because Via cannot determine
-which listener should receive it.
+which listener should receive it. Files with `enable: false` are ignored before
+these rules are applied.
 
 See [Reload configuration](hot-reload.md) for reload behavior.
 

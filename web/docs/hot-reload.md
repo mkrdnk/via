@@ -19,6 +19,7 @@ Via can reload:
 
 - routes and upstreams;
 - static targets;
+- `enable` changes that leave the set of listeners unchanged;
 - certificate and key paths;
 - `log_file` and `log_level`;
 - `shutdown.websocket_timeout`.
@@ -34,6 +35,7 @@ an invalid edit is logged and the last valid configuration remains active.
 Restart Via after:
 
 - adding or removing a listener;
+- changing `enable` when that adds or removes a listener;
 - changing a `listen` address;
 - enabling or disabling TLS on a listener.
 
