@@ -88,61 +88,37 @@ module Via::Configuration
         )
       end
 
-      if debug_values.size > 1
-        raise Error.new(
-          "Configuration directory must declare debug at most once, found #{debug_values.size}"
-        )
-      end
-
-      if log_files.size > 1
-        raise Error.new(
-          "Configuration directory must declare log_file at most once, found #{log_files.size}"
-        )
-      end
-
-      if log_levels.size > 1
-        raise Error.new(
-          "Configuration directory must declare log_level at most once, found #{log_levels.size}"
-        )
-      end
-
-      if proxy_passes.size > 1
-        raise Error.new(
-          "Configuration directory must declare proxy_pass at most once, found #{proxy_passes.size}"
-        )
-      end
-
-      if tls_configs.size > 1
-        raise Error.new(
-          "Configuration directory must declare tls at most once, found #{tls_configs.size}"
-        )
-      end
-
-      if timeout_configs.size > 1
-        raise Error.new(
-          "Configuration directory must declare timeouts at most once, found #{timeout_configs.size}"
-        )
-      end
-
-      if shutdown_configs.size > 1
-        raise Error.new(
-          "Configuration directory must declare shutdown at most once, found #{shutdown_configs.size}"
-        )
-      end
+      debug = single_fragment_value(debug_values, "debug")
+      log_file = single_fragment_value(log_files, "log_file")
+      log_level = single_fragment_value(log_levels, "log_level")
+      proxy_pass = single_fragment_value(proxy_passes, "proxy_pass")
+      tls = single_fragment_value(tls_configs, "tls")
+      timeouts = single_fragment_value(timeout_configs, "timeouts")
+      shutdown = single_fragment_value(shutdown_configs, "shutdown")
 
       Model.new(
         listen: listens.first?,
         host: hosts.first?,
-        debug: debug_values.first?,
-        log_file: log_files.first?,
-        log_level: log_levels.first?,
-        proxy_pass: proxy_passes.first?,
+        debug: debug,
+        log_file: log_file,
+        log_level: log_level,
+        proxy_pass: proxy_pass,
         routes: routes.empty? ? nil : routes,
-        tls: tls_configs.first?,
-        timeouts: timeout_configs.first?,
-        shutdown: shutdown_configs.first?,
+        tls: tls,
+        timeouts: timeouts,
+        shutdown: shutdown,
         config_file: config_files.size == 1 ? config_files.first : @path
       )
+    end
+
+    private def single_fragment_value(values : Array(T), field : String) : T? forall T
+      if values.size > 1
+        raise Error.new(
+          "Configuration directory must declare #{field} at most once, found #{values.size}"
+        )
+      end
+
+      values.first?
     end
 
     private def config_files : Array(String)

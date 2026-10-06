@@ -45,16 +45,14 @@ module Via
     end
 
     private def self.run_server(args : Array(String), output : IO, error : IO) : Int32
-      config_path = DEFAULT_CONFIG_PATH
+      command_options = CommandOptions.new
       debug = false
       log_level_override = nil.as(Logging::Level?)
-      requested_exit = false
-      exit_code = 0
 
       parser = OptionParser.new do |options|
         options.banner = "Usage: via run [options]"
         options.on("-c PATH", "--config=PATH", "Configuration file or directory (default: #{DEFAULT_CONFIG_PATH})") do |path|
-          config_path = path
+          command_options.config_path = path
         end
         options.on("--debug", "Show diagnostics and verbose proxy logs") do
           debug = true
@@ -65,45 +63,17 @@ module Via
           else
             error.puts "Invalid log level: #{value}"
             error.puts "Expected DEBUG, INFO, WARN, or ERROR."
-            requested_exit = true
-            exit_code = 2
+            command_options.requested_exit = true
+            command_options.exit_code = 2
           end
         end
-        options.on("--version", "Show Via version") do
-          output.puts "via #{VERSION}"
-          requested_exit = true
-        end
-        options.on("-h", "--help", "Show this help") do
-          output.puts options
-          requested_exit = true
-        end
-        options.invalid_option do |flag|
-          error.puts "Unknown option: #{flag}"
-          error.puts options
-          requested_exit = true
-          exit_code = 2
-        end
-        options.missing_option do |flag|
-          error.puts "Missing value for #{flag}"
-          error.puts options
-          requested_exit = true
-          exit_code = 2
-        end
-        options.unknown_args do |before_dash, after_dash|
-          arguments = before_dash + after_dash
-          next if arguments.empty?
-
-          error.puts "Unexpected argument#{arguments.size == 1 ? "" : "s"}: #{arguments.join(' ')}"
-          error.puts options
-          requested_exit = true
-          exit_code = 2
-        end
+        configure_common_options(options, command_options, output, error)
       end
 
       parser.parse(args)
-      return exit_code if requested_exit
+      return command_options.exit_code if command_options.requested_exit
 
-      path = config_path
+      path = command_options.config_path
       models = Configuration::Loader.new(path).load_all
       if models.empty?
         output.puts "No listeners are enabled: #{path}"
@@ -183,52 +153,22 @@ module Via
       output : IO,
       error : IO,
     ) : Int32
-      config_path = DEFAULT_CONFIG_PATH
-      requested_exit = false
-      exit_code = 0
+      command_options = CommandOptions.new
 
       parser = OptionParser.new do |options|
         options.banner = "Usage: via check [options]"
         options.on("-c PATH", "--config=PATH", "Configuration file or directory (default: #{DEFAULT_CONFIG_PATH})") do |path|
-          config_path = path
+          command_options.config_path = path
         end
-        options.on("--version", "Show Via version") do
-          output.puts "via #{VERSION}"
-          requested_exit = true
-        end
-        options.on("-h", "--help", "Show this help") do
-          output.puts options
-          requested_exit = true
-        end
-        options.invalid_option do |flag|
-          error.puts "Unknown option: #{flag}"
-          error.puts options
-          requested_exit = true
-          exit_code = 2
-        end
-        options.missing_option do |flag|
-          error.puts "Missing value for #{flag}"
-          error.puts options
-          requested_exit = true
-          exit_code = 2
-        end
-        options.unknown_args do |before_dash, after_dash|
-          arguments = before_dash + after_dash
-          next if arguments.empty?
-
-          error.puts "Unexpected argument#{arguments.size == 1 ? "" : "s"}: #{arguments.join(' ')}"
-          error.puts options
-          requested_exit = true
-          exit_code = 2
-        end
+        configure_common_options(options, command_options, output, error)
       end
 
       parser.parse(args)
-      return exit_code if requested_exit
+      return command_options.exit_code if command_options.requested_exit
 
-      models = Configuration::Loader.new(config_path).load_all
+      models = Configuration::Loader.new(command_options.config_path).load_all
       if models.empty?
-        output.puts "Configuration is valid; no listeners are enabled: #{config_path}"
+        output.puts "Configuration is valid; no listeners are enabled: #{command_options.config_path}"
         return 0
       end
       validators = models.map { |model| Configuration::Validator.new(model) }
@@ -248,8 +188,57 @@ module Via
         logger.close
       end
 
-      output.puts "Configuration is valid: #{config_path}"
+      output.puts "Configuration is valid: #{command_options.config_path}"
       0
+    end
+
+    private class CommandOptions
+      property config_path : String
+      property requested_exit : Bool
+      property exit_code : Int32
+
+      def initialize
+        @config_path = DEFAULT_CONFIG_PATH
+        @requested_exit = false
+        @exit_code = 0
+      end
+    end
+
+    private def self.configure_common_options(
+      options : OptionParser,
+      command_options : CommandOptions,
+      output : IO,
+      error : IO,
+    ) : Nil
+      options.on("--version", "Show Via version") do
+        output.puts "via #{VERSION}"
+        command_options.requested_exit = true
+      end
+      options.on("-h", "--help", "Show this help") do
+        output.puts options
+        command_options.requested_exit = true
+      end
+      options.invalid_option do |flag|
+        error.puts "Unknown option: #{flag}"
+        error.puts options
+        command_options.requested_exit = true
+        command_options.exit_code = 2
+      end
+      options.missing_option do |flag|
+        error.puts "Missing value for #{flag}"
+        error.puts options
+        command_options.requested_exit = true
+        command_options.exit_code = 2
+      end
+      options.unknown_args do |before_dash, after_dash|
+        arguments = before_dash + after_dash
+        next if arguments.empty?
+
+        error.puts "Unexpected argument#{arguments.size == 1 ? "" : "s"}: #{arguments.join(' ')}"
+        error.puts options
+        command_options.requested_exit = true
+        command_options.exit_code = 2
+      end
     end
 
     private def self.help : String
