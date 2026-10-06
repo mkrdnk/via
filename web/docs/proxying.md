@@ -5,8 +5,19 @@ original HTTP message unchanged.
 
 ## Request target
 
-The request method, path, and query are forwarded unchanged. Route matching
-does not strip or rewrite the matched path prefix.
+The request method, path, and query are forwarded unchanged by default. A proxy
+route can remove its matched path prefix before forwarding:
+
+```yaml
+routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    strip_prefix: true
+```
+
+With this route, `/api/users` is sent upstream as `/users`. The query string is
+preserved, and an exact request for `/api` is sent as `/`. Prefix stripping
+also applies to WebSocket handshakes.
 
 ## Host and forwarding headers
 

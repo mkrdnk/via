@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Optional route-level `strip_prefix` rewriting for HTTP and WebSocket upstream
+  requests.
 - Route-level `return` directives for immediate status responses and redirects,
   with safe `$host` and request-time `$query` expansion.
 - Configurable upstream connect, read, and write timeouts with listener defaults

@@ -122,6 +122,7 @@ routes:
   - host: api.example.com
     path: /api
     proxy_pass: http://localhost:8000
+    strip_prefix: true
 
   - path: /
     proxy_pass: http://localhost:3000
@@ -176,9 +177,21 @@ Paths use segment-aware prefix matching:
 The longest matching path wins. A trailing slash in a configured path is
 normalized away, so `/api/` and `/api` describe the same route.
 
-Proxy routes forward the original path and query unchanged. Matching `/api`
-does not strip that prefix from the upstream request. Static routes remove
-their matched prefix when resolving a file.
+Proxy routes forward the original path and query unchanged by default. Set
+`strip_prefix: true` on a route with an upstream URL to remove its matched path
+before forwarding:
+
+```yaml
+routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    strip_prefix: true
+```
+
+This forwards `/api/users?active=true` as `/users?active=true`. A request for
+the route path itself (`/api`) is forwarded as `/`. On a `/` route,
+`strip_prefix` has no effect. Static routes always remove their matched prefix
+when resolving a file.
 
 ### Host matching
 

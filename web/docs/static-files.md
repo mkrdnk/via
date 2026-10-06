@@ -43,8 +43,8 @@ maps to:
 <public>/css/app.css
 ```
 
-Unlike static routes, `proxy_pass` routes continue forwarding the original
-path unchanged.
+Unlike static routes, `proxy_pass` routes forward the original path by default.
+They only remove it when configured with `strip_prefix: true`.
 
 A request for a directory without a trailing slash receives a permanent
 redirect to the slash form. Via then looks for `index.html` inside the
