@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Route-level request and response header `set` and `remove` rules for HTTP and
+  WebSocket proxying.
 - Optional route-level `strip_prefix` rewriting for HTTP and WebSocket upstream
   requests.
 - Route-level `return` directives for immediate status responses and redirects,

@@ -34,6 +34,34 @@ Via overwrites incoming `X-Forwarded-Host` and `X-Forwarded-Proto` values.
 An existing `X-Forwarded-For` chain is retained and the direct peer address is
 appended to it.
 
+## Route header rules
+
+Proxy routes can set or remove end-to-end headers in either direction:
+
+```yaml
+routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    headers:
+      request:
+        set:
+          X-Service: api
+        remove:
+          - X-Powered-By
+      response:
+        set:
+          X-Frame-Options: DENY
+```
+
+Request rules run after Via constructs its forwarding headers. Response rules
+run after hop-by-hop headers have been removed. `set` replaces all existing
+values for that header; `remove` deletes it regardless of name casing. The same
+rules apply to WebSocket handshakes.
+
+Transport headers and Via-managed forwarding headers cannot be changed by route
+rules. See [Header manipulation](configuration.md#header-manipulation) for the
+complete list.
+
 ## Hop-by-hop headers
 
 Via removes standard hop-by-hop headers in both directions:
@@ -52,7 +80,8 @@ Each HTTP transport then applies the correct framing for its own connection.
 This allows Via to receive a chunked body and send it onward with new chunk
 framing instead of forwarding the original chunks.
 
-End-to-end request and response headers are otherwise preserved.
+End-to-end request and response headers are otherwise preserved unless changed
+by the selected route's header rules.
 
 ## WebSockets
 

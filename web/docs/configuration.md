@@ -135,6 +135,48 @@ Top-level `proxy_pass` and `routes` are mutually exclusive. Every route must
 have exactly one target: `proxy_pass`, `static`, or `return`. `host` is optional
 and `path` defaults to `/`.
 
+### Header manipulation
+
+Proxy routes can set or remove request and response headers:
+
+```yaml
+routes:
+  - host: api.example.com
+    proxy_pass: http://localhost:8000
+
+    headers:
+      request:
+        set:
+          X-Service: api
+        remove:
+          - X-Powered-By
+
+      response:
+        set:
+          X-Frame-Options: DENY
+        remove:
+          - X-Upstream-Only
+```
+
+`request` rules modify the headers sent to the upstream. `response` rules
+modify the headers returned to the client, including WebSocket handshake
+responses. Under either direction:
+
+- `set` maps a header name to one value, replacing any existing values;
+- `remove` lists headers to delete;
+- names are case-insensitive;
+- a header cannot appear in both `set` and `remove`.
+
+Header rules are only valid on routes whose `proxy_pass` is an HTTP or HTTPS
+URL. Via rejects invalid names and values. It also protects headers whose
+modification would conflict with HTTP framing or Via's forwarding policy:
+
+- hop-by-hop headers (`Connection`, `Keep-Alive`, `Proxy-Authenticate`,
+  `Proxy-Authorization`, `TE`, `Trailer`, `Transfer-Encoding`, and `Upgrade`);
+- `Content-Length` and `X-Request-ID`;
+- on requests, `Host`, `X-Forwarded-For`, `X-Forwarded-Host`, and
+  `X-Forwarded-Proto`.
+
 ### Immediate responses and redirects
 
 Use `return` to respond without contacting an upstream:
