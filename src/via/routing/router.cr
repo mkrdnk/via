@@ -11,10 +11,15 @@ module Via::Routing
     end
 
     def match(host : String?, path : String) : Route?
-      request_host = self.class.normalize_request_host(host)
+      request_host = nil.as(String?)
+      host_normalized = false
       best = nil
 
       @routes.each do |route|
+        if route.host && !host_normalized
+          request_host = self.class.normalize_request_host(host)
+          host_normalized = true
+        end
         next unless host_matches?(route.host, request_host)
         next unless path_matches?(route.path, path)
 
@@ -50,7 +55,8 @@ module Via::Routing
     private def path_matches?(route_path : String, request_path : String) : Bool
       route_path == "/" ||
         request_path == route_path ||
-        request_path.starts_with?("#{route_path}/")
+        (request_path.starts_with?(route_path) &&
+          request_path.byte_at(route_path.bytesize) == '/'.ord)
     end
 
     private def more_specific?(candidate : Route, current : Route) : Bool

@@ -22,7 +22,6 @@ module Via::Static
     def resolve(root : String, relative_path : String) : Tuple(String, File::Info)?
       expanded = File.expand_path(relative_path, root)
       return unless inside_root?(root, expanded)
-      return unless File.info?(expanded)
 
       real_path = File.realpath(expanded)
       return unless inside_root?(root, real_path)

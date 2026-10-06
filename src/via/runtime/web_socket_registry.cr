@@ -13,7 +13,7 @@ module Via::Runtime
 
     def initialize
       @mutex = Mutex.new
-      @entries = [] of Entry
+      @entries = Set(Entry).new
       @draining = false
       @closed = false
       @drained = Channel(Nil).new(1)
@@ -80,7 +80,7 @@ module Via::Runtime
 
         @closed = true
         active = @entries
-        @entries = [] of Entry
+        @entries = Set(Entry).new
         active
       end
 
