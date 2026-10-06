@@ -254,6 +254,93 @@ describe Via::Configuration::Model do
     end
   end
 
+  it "loads request and response header rules" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - proxy_pass: http://localhost:3000
+          headers:
+            request:
+              set:
+                X-Service: api
+              remove:
+                - X-Powered-By
+            response:
+              set:
+                X-Frame-Options: DENY
+              remove:
+                - X-Upstream-Only
+      YAML
+
+    headers = config.validate.routes.first.headers
+    headers.request.set.should eq({"X-Service" => "api"})
+    headers.request.remove.should eq(["X-Powered-By"])
+    headers.response.set.should eq({"X-Frame-Options" => "DENY"})
+    headers.response.remove.should eq(["X-Upstream-Only"])
+  end
+
+  it "rejects invalid or unsafe header rules" do
+    invalid_configs = {
+      {
+        "headers requires an upstream URL",
+        <<-YAML,
+          - return: 204
+            headers:
+              response:
+                set:
+                  X-Test: value
+          YAML
+      },
+      {
+        "Header Host cannot be modified",
+        <<-YAML,
+          - proxy_pass: http://localhost:3000
+            headers:
+              request:
+                set:
+                  Host: example.com
+          YAML
+      },
+      {
+        "Invalid header name",
+        <<-YAML,
+          - proxy_pass: http://localhost:3000
+            headers:
+              response:
+                remove:
+                  - Bad Header
+          YAML
+      },
+      {
+        "Invalid value for header X-Test",
+        <<-YAML,
+          - proxy_pass: http://localhost:3000
+            headers:
+              response:
+                set:
+                  X-Test: "first\\nsecond"
+          YAML
+      },
+      {
+        "cannot be both set and removed",
+        <<-YAML,
+          - proxy_pass: http://localhost:3000
+            headers:
+              request:
+                set:
+                  X-Service: api
+                remove:
+                  - x-service
+          YAML
+      },
+    }
+
+    invalid_configs.each do |expected, routes|
+      config = Via::Config.from_yaml("listen: \":8080\"\nroutes:\n#{routes}")
+      expect_raises(Via::ConfigurationError, expected) { config.validate }
+    end
+  end
+
   it "accepts an HTTP status as a proxy_pass target" do
     config = Via::Config.from_yaml <<-YAML
       listen: ":8080"
@@ -1782,6 +1869,61 @@ describe Via::Proxy::Handler do
 
         trailing_slash = HTTP::Client.get("http://#{proxy_address}/api/?page=2")
         trailing_slash.body.should eq("/?page=2")
+      ensure
+        proxy.close
+      end
+    end
+  end
+
+  it "sets and removes request and response headers" do
+    received = Channel(Tuple(String?, String?)).new(1)
+    upstream = HTTP::Server.new do |context|
+      received.send({
+        context.request.headers["X-Service"]?,
+        context.request.headers["X-Powered-By"]?,
+      })
+      context.response.headers["X-Frame-Options"] = "SAMEORIGIN"
+      context.response.headers["X-Upstream-Only"] = "remove-me"
+      context.response << "ok"
+    end
+
+    with_server(upstream) do |upstream_address|
+      routes = Via::Config.from_yaml(<<-YAML).validate.routes
+        listen: ":8080"
+        routes:
+          - proxy_pass: http://#{upstream_address}
+            headers:
+              request:
+                set:
+                  X-Service: api
+                remove:
+                  - X-Powered-By
+              response:
+                set:
+                  X-Frame-Options: DENY
+                remove:
+                  - X-Upstream-Only
+        YAML
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        routes
+      )
+      proxy = Via::Server.new(config, IO::Memory.new)
+      proxy_address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        response = HTTP::Client.get(
+          "http://#{proxy_address}/",
+          headers: HTTP::Headers{
+            "X-Service"    => "client",
+            "X-Powered-By" => "framework",
+          }
+        )
+
+        received.receive.should eq({"api", nil})
+        response.headers["X-Frame-Options"].should eq("DENY")
+        response.headers.has_key?("X-Upstream-Only").should be_false
       ensure
         proxy.close
       end

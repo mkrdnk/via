@@ -6,7 +6,26 @@ module Via::Configuration
     DURATION_PATTERN  = /\A(?<value>(?:\d+(?:\.\d*)?|\.\d+))(?<unit>ms|s|m|h)\z/
     RETURN_PATTERN    = /\A(?<status>\d{3})(?:[ \t]+(?<location>\S+))?\z/
     RETURN_VARIABLE   = /\$[A-Za-z_][A-Za-z0-9_]*/
+    HEADER_NAME       = /\A[!#$%&'*+\-.^_`|~0-9A-Za-z]+\z/
     REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+    PROTECTED_HEADERS = Set{
+      "connection",
+      "content-length",
+      "keep-alive",
+      "proxy-authenticate",
+      "proxy-authorization",
+      "te",
+      "trailer",
+      "transfer-encoding",
+      "upgrade",
+      "x-request-id",
+    }
+    PROTECTED_REQUEST_HEADERS = Set{
+      "host",
+      "x-forwarded-for",
+      "x-forwarded-host",
+      "x-forwarded-proto",
+    }
 
     def initialize(@config : Model)
     end
@@ -111,6 +130,9 @@ module Via::Configuration
         if !route.strip_prefix.nil? && !upstream.is_a?(String)
           raise Error.new("routes[#{index}].strip_prefix requires an upstream URL")
         end
+        if route.headers && !upstream.is_a?(String)
+          raise Error.new("routes[#{index}].headers requires an upstream URL")
+        end
 
         host = parse_host(route.host, "routes[#{index}].host")
         path = parse_path(route.path, index)
@@ -129,7 +151,8 @@ module Via::Configuration
             upstream,
             "routes[#{index}].proxy_pass",
             route_timeouts,
-            route.strip_prefix || false
+            route.strip_prefix || false,
+            parse_headers(route.headers, index)
           )
         elsif static_config
           if route.timeouts
@@ -168,6 +191,7 @@ module Via::Configuration
       field = "proxy_pass",
       timeouts = Routing::Timeouts.new,
       strip_prefix = false,
+      headers = Routing::HeaderConfig.new,
     ) : Routing::Route
       case value
       when String
@@ -177,7 +201,8 @@ module Via::Configuration
           path,
           parse_upstream(expanded, field),
           timeouts: timeouts,
-          strip_prefix: strip_prefix
+          strip_prefix: strip_prefix,
+          headers: headers
         )
       when Int32
         Routing::Route.new(
@@ -190,6 +215,82 @@ module Via::Configuration
       else
         raise "Unsupported proxy_pass value"
       end
+    end
+
+    private def parse_headers(
+      config : Headers?,
+      route_index : Int32,
+    ) : Routing::HeaderConfig
+      return Routing::HeaderConfig.new unless config
+
+      field = "routes[#{route_index}].headers"
+      Routing::HeaderConfig.new(
+        parse_header_rules(config.request, "#{field}.request", :request),
+        parse_header_rules(config.response, "#{field}.response", :response)
+      )
+    end
+
+    private def parse_header_rules(
+      config : HeaderRules?,
+      field : String,
+      direction : Symbol,
+    ) : Routing::HeaderRules
+      return Routing::HeaderRules.new unless config
+
+      set = Hash(String, String).new
+      names = Set(String).new
+      config.set.try &.each do |name, value|
+        normalized = validate_header_name(name, "#{field}.set", direction)
+        unless names.add?(normalized)
+          raise Error.new("Duplicate header #{name} in #{field}.set")
+        end
+        unless valid_header_value?(value)
+          raise Error.new("Invalid value for header #{name} in #{field}.set")
+        end
+        set[name] = value
+      end
+
+      remove = Array(String).new
+      removed_names = Set(String).new
+      config.remove.try &.each do |name|
+        normalized = validate_header_name(name, "#{field}.remove", direction)
+        if names.includes?(normalized)
+          raise Error.new("Header #{name} cannot be both set and removed in #{field}")
+        end
+        unless removed_names.add?(normalized)
+          raise Error.new("Duplicate header #{name} in #{field}.remove")
+        end
+        remove << name
+      end
+
+      Routing::HeaderRules.new(set, remove)
+    end
+
+    private def validate_header_name(
+      name : String,
+      field : String,
+      direction : Symbol,
+    ) : String
+      unless HEADER_NAME.matches?(name)
+        raise Error.new("Invalid header name #{name.inspect} in #{field}")
+      end
+
+      normalized = name.downcase
+      if protected_header?(normalized, direction)
+        raise Error.new("Header #{name} cannot be modified in #{field}")
+      end
+      normalized
+    end
+
+    private def valid_header_value?(value : String) : Bool
+      value.each_byte.none? do |byte|
+        byte == 0x7f || (byte < 0x20 && byte != 0x09)
+      end
+    end
+
+    private def protected_header?(name : String, direction : Symbol) : Bool
+      PROTECTED_HEADERS.includes?(name) ||
+        (direction == :request && PROTECTED_REQUEST_HEADERS.includes?(name))
     end
 
     private def parse_return(

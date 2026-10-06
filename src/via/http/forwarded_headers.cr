@@ -31,6 +31,7 @@ module Via::HTTP
       upstream : URI,
       request_id : String,
       scheme : String,
+      rules : Routing::HeaderRules = Routing::HeaderRules.new,
     ) : ::HTTP::Headers
       headers = filter(request.headers)
       original_host = request.headers["Host"]?
@@ -50,13 +51,19 @@ module Via::HTTP
         end
       end
 
+      apply(headers, rules)
       headers
     end
 
-    def copy_response(source : ::HTTP::Headers, destination : ::HTTP::Headers) : Nil
+    def copy_response(
+      source : ::HTTP::Headers,
+      destination : ::HTTP::Headers,
+      rules : Routing::HeaderRules = Routing::HeaderRules.new,
+    ) : Nil
       filter(source).each do |name, values|
         values.each { |value| destination.add(name, value) }
       end
+      apply(destination, rules)
     end
 
     def valid_host?(request : ::HTTP::Request) : Bool
@@ -65,6 +72,11 @@ module Via::HTTP
       return true unless host
 
       !Routing::Router.normalize_request_host(host).nil?
+    end
+
+    private def apply(headers : ::HTTP::Headers, rules : Routing::HeaderRules) : Nil
+      rules.remove.each { |name| headers.delete(name) }
+      rules.set.each { |name, value| headers[name] = value }
     end
 
     private def append_forwarded_for(headers : ::HTTP::Headers, client_ip : String) : Nil

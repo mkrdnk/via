@@ -27,8 +27,15 @@ module Via::Proxy
       upstream : URI,
       request_id : String,
       scheme : String,
+      rules : Routing::HeaderRules = Routing::HeaderRules.new,
     ) : ::HTTP::Headers
-      headers = Via::HTTP::ForwardedHeaders.request(request, upstream, request_id, scheme)
+      headers = Via::HTTP::ForwardedHeaders.request(
+        request,
+        upstream,
+        request_id,
+        scheme,
+        rules
+      )
       headers["Connection"] = "Upgrade"
       headers["Upgrade"] = "websocket"
       headers
@@ -53,8 +60,9 @@ module Via::Proxy
     def copy_response(
       source : ::HTTP::Headers,
       destination : ::HTTP::Headers,
+      rules : Routing::HeaderRules = Routing::HeaderRules.new,
     ) : Nil
-      Via::HTTP::ForwardedHeaders.copy_response(source, destination)
+      Via::HTTP::ForwardedHeaders.copy_response(source, destination, rules)
       destination["Connection"] = "Upgrade"
       destination["Upgrade"] = "websocket"
     end

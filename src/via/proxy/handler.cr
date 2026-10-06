@@ -181,7 +181,8 @@ module Via::Proxy
             request,
             upstream,
             id,
-            @scheme
+            @scheme,
+            route.headers.request
           )
           WebSocketTunnel.send_request(upstream_io, request, headers, upstream_resource)
           WebSocketTunnel.read_response(upstream_io) do |upstream_response|
@@ -194,7 +195,11 @@ module Via::Proxy
             )
 
             if WebSocketTunnel.response?(request, upstream_response)
-              WebSocketTunnel.copy_response(upstream_response.headers, response.headers)
+              WebSocketTunnel.copy_response(
+                upstream_response.headers,
+                response.headers,
+                route.headers.response
+              )
               response.headers["X-Request-ID"] = id
               WebSocketTunnel.upgrade(
                 response,
@@ -209,7 +214,13 @@ module Via::Proxy
             elsif upstream_response.status.switching_protocols?
               raise Socket::Error.new("Invalid WebSocket upgrade response")
             else
-              copy_response(upstream_response, response, id, transfer)
+              copy_response(
+                upstream_response,
+                response,
+                id,
+                transfer,
+                route.headers.response
+              )
             end
           end
         ensure
@@ -218,7 +229,13 @@ module Via::Proxy
       else
         key = PoolKey.new(upstream, route.timeouts)
         @clients[key].with do |client|
-          headers = Via::HTTP::ForwardedHeaders.request(request, upstream, id, @scheme)
+          headers = Via::HTTP::ForwardedHeaders.request(
+            request,
+            upstream,
+            id,
+            @scheme,
+            route.headers.request
+          )
           client.exec(request.method, upstream_resource, headers, request.body) do |upstream_response|
             response.status = upstream_response.status
             @logger.debug(
@@ -227,7 +244,13 @@ module Via::Proxy
               upstream: upstream_name,
               status: upstream_response.status_code
             )
-            copy_response(upstream_response, response, id, transfer)
+            copy_response(
+              upstream_response,
+              response,
+              id,
+              transfer,
+              route.headers.response
+            )
           end
         end
       end
@@ -315,8 +338,13 @@ module Via::Proxy
       downstream : ::HTTP::Server::Response,
       request_id : String,
       transfer : TransferState,
+      rules : Routing::HeaderRules,
     ) : Nil
-      Via::HTTP::ForwardedHeaders.copy_response(upstream.headers, downstream.headers)
+      Via::HTTP::ForwardedHeaders.copy_response(
+        upstream.headers,
+        downstream.headers,
+        rules
+      )
       downstream.headers["X-Request-ID"] = request_id
 
       if body = upstream.body_io?

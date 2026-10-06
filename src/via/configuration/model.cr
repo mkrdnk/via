@@ -47,6 +47,22 @@ module Via::Configuration
     end
   end
 
+  class HeaderRules
+    include YAML::Serializable
+    include YAML::Serializable::Strict
+
+    getter set : Hash(String, String)?
+    getter remove : Array(String)?
+  end
+
+  class Headers
+    include YAML::Serializable
+    include YAML::Serializable::Strict
+
+    getter request : HeaderRules?
+    getter response : HeaderRules?
+  end
+
   alias ProxyPass = String | Int32
   alias ReturnValue = String | Int32
 
@@ -67,6 +83,7 @@ module Via::Configuration
     getter return_config : ReturnValue?
 
     getter strip_prefix : Bool?
+    getter headers : Headers?
     getter timeouts : Timeouts?
   end
 

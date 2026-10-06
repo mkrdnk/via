@@ -67,7 +67,7 @@ end
 
 describe "WebSocket proxying" do
   it "relays text and binary frames with routing and forwarding metadata" do
-    handshake = Channel(Tuple(String, String, String, String, String, String)).new(1)
+    handshake = Channel(Tuple(String, String, String, String, String, String, String)).new(1)
     upstream_closed = Channel(Nil).new(1)
     web_socket_handler = HTTP::WebSocketHandler.new(["via.test"]) do |socket, context|
       handshake.send({
@@ -77,6 +77,7 @@ describe "WebSocket proxying" do
         context.request.headers["X-Forwarded-Proto"],
         context.request.headers["Origin"],
         context.request.headers["Sec-WebSocket-Protocol"],
+        context.request.headers["X-Service"],
       })
       socket.on_message { |message| socket.send("echo:#{message}") }
       socket.on_binary { |message| socket.send(message) }
@@ -93,7 +94,15 @@ describe "WebSocket proxying" do
             "public.example.com",
             "/socket",
             URI.parse("http://#{upstream_address}"),
-            strip_prefix: true
+            strip_prefix: true,
+            headers: Via::Routing::HeaderConfig.new(
+              request: Via::Routing::HeaderRules.new(
+                set: {"X-Service" => "realtime"}
+              ),
+              response: Via::Routing::HeaderRules.new(
+                set: {"X-Frame-Options" => "DENY"}
+              )
+            )
           ),
         ]
       )
@@ -120,6 +129,7 @@ describe "WebSocket proxying" do
           HTTP::WebSocket::Protocol.key_challenge(key)
         )
         response.headers["Sec-WebSocket-Protocol"].should eq("via.test")
+        response.headers["X-Frame-Options"].should eq("DENY")
         protocol = HTTP::WebSocket::Protocol.new(downstream, masked: true)
         socket = HTTP::WebSocket.new(protocol)
 
@@ -130,6 +140,7 @@ describe "WebSocket proxying" do
           "http",
           "https://public.example.com",
           "via.test",
+          "realtime",
         })
 
         socket.receive.should eq("welcome")
