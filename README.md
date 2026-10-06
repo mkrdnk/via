@@ -2,24 +2,35 @@
 
 ![via logo](web/docs/assets/via-logo.svg)
 
-**Via is a small, focused HTTP reverse proxy.**
+**Via is a small, focused HTTP/1.1 reverse proxy with a strict YAML
+configuration.**
 
 [Website](https://via.makridenko.com/) ·
-[Documentation](https://via.makridenko.com/docs/)
+[Documentation](https://via.makridenko.com/docs/) ·
+[Releases](https://github.com/mkrdnk/via/releases)
 
-Via is an early-stage HTTP reverse proxy. It supports host/path routing,
-streaming request and response bodies, keep-alive, reusable upstream
-connections, transparent WebSocket tunnels, TLS termination, and atomic
-configuration reloads.
+Via is designed for straightforward self-hosted deployments where predictable
+routing and a small operational surface matter more than a plugin ecosystem.
+It is early-stage software.
+
+## What Via handles
+
+- host- and path-based routing with longest-prefix matching;
+- optional path-prefix stripping and per-route header rules;
+- streaming request and response bodies over reusable upstream connections;
+- transparent WebSocket tunnels;
+- TLS termination and static file serving;
+- multiple listeners and atomic configuration reloads;
+- structured request logs, request IDs, timeouts, and graceful shutdown.
 
 ## Quick start
 
-Download the package for Debian 13 or Fedora 43, or the archive for Ubuntu
-24.04, from [GitHub Releases](https://github.com/mkrdnk/via/releases). See
-[Install and run](web/docs/getting-started.md) for package names, checksum
-verification, and installation commands.
+Install a verified package or binary from
+[GitHub Releases](https://github.com/mkrdnk/via/releases). The
+[installation guide](web/docs/getting-started.md) has commands for Debian,
+Fedora, Ubuntu, x86-64, and ARM64.
 
-As a fallback when manual installation is not suitable, use the installer:
+For a quick installer-based setup:
 
 ```sh
 curl -fsSL https://via.makridenko.com/install.sh | sh
@@ -33,38 +44,51 @@ proxy_pass: http://localhost:3000
 ```
 
 ```sh
+via check -c via.yaml
 via run -c via.yaml
 ```
 
-To run Via as an unprivileged container:
+Requests to `http://localhost:8080` now reach
+`http://localhost:3000`.
 
-```sh
-mkdir -p config
-cat > config/via.yaml <<'YAML'
+## Route an API and an application
+
+```yaml
 listen: ":8080"
-proxy_pass: http://host.docker.internal:3000
-YAML
-docker run --rm --publish 8080:8080 \
-  --add-host host.docker.internal:host-gateway \
-  --mount type=bind,source="$(pwd)/config",target=/etc/via,readonly \
-  ghcr.io/mkrdnk/via:latest
+
+routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    strip_prefix: true
+
+  - path: /
+    proxy_pass: http://localhost:3000
 ```
 
-See [Run in a container](web/docs/container.md) for configuration mounts,
-upstream networking, image versions, and log access.
+This sends `/api/users` to the API as `/users` and all other paths to the
+application. See [Configuration](web/docs/configuration.md) for matching,
+headers, redirects, static routes, TLS, and multiple listeners.
 
-## Documentation
+## Find the right guide
 
-- [Install and run](web/docs/getting-started.md)
-- [Configuration](web/docs/configuration.md)
-- [Proxying and WebSockets](web/docs/proxying.md)
-- [Static files](web/docs/static-files.md)
-- [TLS](web/docs/tls.md)
-- [Command line](web/docs/cli.md)
-- [Run in a container](web/docs/container.md)
-- [Run as a service](web/docs/service.md)
-- [Reload configuration](web/docs/hot-reload.md)
-- [Logs and troubleshooting](web/docs/logging.md)
+| Goal | Guide |
+| --- | --- |
+| Install Via and proxy the first request | [Install and run](web/docs/getting-started.md) |
+| Configure routes, prefix stripping, headers, or redirects | [Configuration](web/docs/configuration.md) |
+| Understand forwarding, streaming, and WebSockets | [Proxying and WebSockets](web/docs/proxying.md) |
+| Terminate HTTPS | [TLS](web/docs/tls.md) |
+| Serve a site or SPA | [Static files](web/docs/static-files.md) |
+| Run under systemd | [Run as a service](web/docs/service.md) |
+| Run an unprivileged container | [Run in a container](web/docs/container.md) |
+| Reload safely or rotate certificates | [Reload configuration](web/docs/hot-reload.md) |
+| Diagnose a failed request | [Logs and troubleshooting](web/docs/logging.md) |
+| Look up commands and flags | [CLI reference](web/docs/cli.md) |
+
+## Scope
+
+Via intentionally does not provide caching, FastCGI, WAF functionality,
+scripting, plugins, arbitrary rewrite rules, ACME automation, or load
+balancing. See the feature-specific guides for current limitations.
 
 ## License
 
