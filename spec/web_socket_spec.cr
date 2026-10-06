@@ -130,6 +130,7 @@ describe "WebSocket proxying" do
         )
         response.headers["Sec-WebSocket-Protocol"].should eq("via.test")
         response.headers["X-Frame-Options"].should eq("DENY")
+        response.headers["Server"].should eq("Via")
         protocol = HTTP::WebSocket::Protocol.new(downstream, masked: true)
         socket = HTTP::WebSocket.new(protocol)
 

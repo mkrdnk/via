@@ -302,6 +302,16 @@ describe Via::Configuration::Model do
           YAML
       },
       {
+        "Header Server cannot be modified",
+        <<-YAML,
+          - proxy_pass: http://localhost:3000
+            headers:
+              response:
+                remove:
+                  - Server
+          YAML
+      },
+      {
         "Invalid header name",
         <<-YAML,
           - proxy_pass: http://localhost:3000
@@ -1650,6 +1660,43 @@ describe Via::Proxy::Handler do
     headers.has_key?("Connection").should be_false
     headers.has_key?("Keep-Alive").should be_false
     headers.has_key?("X-Internal").should be_false
+  end
+
+  it "sets the Via server identity on proxied and generated responses" do
+    upstream = HTTP::Server.new do |context|
+      context.response.headers["Server"] = "upstream/1.0"
+      context.response << "upstream"
+    end
+
+    with_server(upstream) do |upstream_address|
+      routes = Via::Config.from_yaml(<<-YAML).validate.routes
+        listen: ":8080"
+        routes:
+          - path: /proxy
+            proxy_pass: http://#{upstream_address}
+          - path: /denied
+            return: 403
+        YAML
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        routes
+      )
+      proxy = Via::Server.new(config, IO::Memory.new)
+      proxy_address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        proxied = HTTP::Client.get("http://#{proxy_address}/proxy")
+        denied = HTTP::Client.get("http://#{proxy_address}/denied")
+        missing = HTTP::Client.get("http://#{proxy_address}/missing")
+
+        proxied.headers["Server"].should eq("Via")
+        denied.headers["Server"].should eq("Via")
+        missing.headers["Server"].should eq("Via")
+      ensure
+        proxy.close
+      end
+    end
   end
 
   it "returns a configured status without contacting an upstream" do

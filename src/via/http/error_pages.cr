@@ -85,6 +85,7 @@ module Via::HTTP
           values.each { |value| response.headers.add(name, value) }
         end
       end
+      Via::HTTP::ServerHeader.apply(response.headers)
       response << content unless head || content_forbidden
     end
 

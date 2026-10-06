@@ -110,6 +110,7 @@ module Via::Runtime
     end
 
     def call(context : ::HTTP::Server::Context) : Nil
+      Via::HTTP::ServerHeader.apply(context.response.headers)
       generation = nil
       diagnostic = nil
       accepted = false

@@ -64,6 +64,7 @@ module Via::HTTP
         values.each { |value| destination.add(name, value) }
       end
       apply(destination, rules)
+      Via::HTTP::ServerHeader.apply(destination)
     end
 
     def valid_host?(request : ::HTTP::Request) : Bool

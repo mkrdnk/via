@@ -26,6 +26,9 @@ module Via::Configuration
       "x-forwarded-host",
       "x-forwarded-proto",
     }
+    PROTECTED_RESPONSE_HEADERS = Set{
+      "server",
+    }
 
     def initialize(@config : Model)
     end
@@ -290,7 +293,8 @@ module Via::Configuration
 
     private def protected_header?(name : String, direction : Symbol) : Bool
       PROTECTED_HEADERS.includes?(name) ||
-        (direction == :request && PROTECTED_REQUEST_HEADERS.includes?(name))
+        (direction == :request && PROTECTED_REQUEST_HEADERS.includes?(name)) ||
+        (direction == :response && PROTECTED_RESPONSE_HEADERS.includes?(name))
     end
 
     private def parse_return(
