@@ -17,6 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -->
 
+## 0.4.1 - [unreleased]
+
+### Changed
+
+- Consolidated shared CLI option handling and configuration fragment validation
+  while preserving public APIs, help output, error messages, and exit codes.
+- Reduced routing allocations by checking path segment boundaries without
+  temporary strings and parsing request hosts only for host-specific routes.
+- Replaced linear WebSocket registry lookups and removals with set operations.
+- Removed a redundant filesystem metadata lookup when resolving static files,
+  retaining canonical path and symlink boundary checks.
+
+---
+
 ## 0.4.0 - 2026-10-06
 
 ### Added
