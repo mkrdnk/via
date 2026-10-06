@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -->
 
-## VERSION - [unreleased]
+## 0.4.0 - 2026-10-06
 
 ### Added
 
@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and per-route overrides for HTTP and WebSocket proxying.
 - Graceful `SIGINT` and `SIGTERM` shutdown that drains active HTTP requests,
   gives WebSockets a configurable grace period, and then closes upstream pools.
+
+---
 
 ## 0.3.1 - 2026-10-04
 
