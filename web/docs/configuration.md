@@ -175,7 +175,8 @@ modification would conflict with HTTP framing or Via's forwarding policy:
   `Proxy-Authorization`, `TE`, `Trailer`, `Transfer-Encoding`, and `Upgrade`);
 - `Content-Length` and `X-Request-ID`;
 - on requests, `Host`, `X-Forwarded-For`, `X-Forwarded-Host`, and
-  `X-Forwarded-Proto`.
+  `X-Forwarded-Proto`;
+- on responses, `Server`.
 
 ### Immediate responses and redirects
 

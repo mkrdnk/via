@@ -62,6 +62,19 @@ Transport headers and Via-managed forwarding headers cannot be changed by route
 rules. See [Header manipulation](configuration.md#header-manipulation) for the
 complete list.
 
+## Server identity
+
+Via adds this header to every response:
+
+```http
+Server: Via
+```
+
+The header intentionally omits the version number. Via replaces an upstream
+`Server` value and does not allow response header rules to change or remove its
+server identity. This policy also applies to static files, redirects, built-in
+error pages, and WebSocket handshakes.
+
 ## Hop-by-hop headers
 
 Via removes standard hop-by-hop headers in both directions:
