@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.0/logging/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Logs and troubleshooting - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Logs and troubleshooting";
+        var mkdocs_page_input_path = "logging.md";
+        var mkdocs_page_url = "/docs/0.4.0/logging/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Logs and troubleshooting</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#configure-logging">Configure logging</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#trace-a-failed-request">Trace a failed request</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#common-responses">Common responses</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#debug-a-route-or-upstream">Debug a route or upstream</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#systemd-logs">systemd logs</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Operate</li>
+      <li class="breadcrumb-item active">Logs and troubleshooting</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/logging.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="logs-and-troubleshooting">Logs and troubleshooting</h1>
+<p>Via writes its startup summary to stdout and operational logs to stderr. Each
+log record is one line of <code>key=value</code> fields:</p>
+<pre><code class="language-text">time=2026-10-01T13:26:16.666Z level=info event=request.completed config_file=&quot;via.yaml&quot; request_id=&quot;fbd06c3469d1c645432441b7816b52ad&quot; client=&quot;127.0.0.1&quot; method=&quot;GET&quot; host=&quot;example.com&quot; path=&quot;/api/users&quot; target=&quot;proxy&quot; route_path=&quot;/api&quot; upstream=&quot;http://127.0.0.1:8000&quot; status=200 response_bytes=421 duration_ms=4.691 failure=null
+</code></pre>
+<p>Query strings are not written to normal request logs, which avoids recording
+tokens and other sensitive query parameters.</p>
+<h2 id="configure-logging">Configure logging</h2>
+<p>Keep logs on stderr for systemd or a container, or append them to a file:</p>
+<pre><code class="language-yaml">log_file: /var/log/via.log
+log_level: INFO
+</code></pre>
+<p>Supported levels are <code>DEBUG</code>, <code>INFO</code>, <code>WARN</code>, and <code>ERROR</code>. Names are
+case-insensitive, and <code>WARNING</code> is accepted as an alias for <code>WARN</code>. The default
+is <code>INFO</code>.</p>
+<p>Relative <code>log_file</code> paths use Via's working directory. The parent directory must
+already exist and be writable. <code>log_file</code> and <code>log_level</code> changes are applied
+during configuration reload.</p>
+<p>The effective level is selected in this order:</p>
+<ol>
+<li><code>--log-level</code>;</li>
+<li><code>--debug</code>, which selects <code>DEBUG</code> for every listener;</li>
+<li><code>debug: true</code> in a listener's YAML, which selects <code>DEBUG</code> for that listener;</li>
+<li><code>log_level</code> in YAML;</li>
+<li>the default <code>INFO</code>.</li>
+</ol>
+<h2 id="trace-a-failed-request">Trace a failed request</h2>
+<p>Via generates a new request ID for every request. The same ID is:</p>
+<ul>
+<li>returned in the <code>X-Request-ID</code> response header;</li>
+<li>sent upstream in the <code>X-Request-ID</code> request header;</li>
+<li>shown on built-in error pages;</li>
+<li>included in Via's logs.</li>
+</ul>
+<p>Use the ID shown to a client to find the corresponding request:</p>
+<pre><code class="language-sh">journalctl -u via -o cat | grep 'request_id=&quot;fbd06c3469d1c645432441b7816b52ad&quot;'
+</code></pre>
+<h2 id="common-responses">Common responses</h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>400 Bad Request</code></td>
+<td>The request has no valid HTTP/1.1 <code>Host</code> header.</td>
+</tr>
+<tr>
+<td><code>403 Forbidden</code></td>
+<td>A route is configured with <code>return: 403</code>.</td>
+</tr>
+<tr>
+<td><code>404 Not Found</code></td>
+<td>No route matches, or a static file does not exist.</td>
+</tr>
+<tr>
+<td><code>405 Method Not Allowed</code></td>
+<td>A static route received a method other than <code>GET</code> or <code>HEAD</code>.</td>
+</tr>
+<tr>
+<td><code>416 Range Not Satisfiable</code></td>
+<td>A static byte range is invalid or unavailable.</td>
+</tr>
+<tr>
+<td><code>502 Bad Gateway</code></td>
+<td>The upstream connection or WebSocket handshake failed before a valid response.</td>
+</tr>
+<tr>
+<td><code>503 Service Unavailable</code></td>
+<td>Debug mode is waiting for a valid replacement configuration.</td>
+</tr>
+<tr>
+<td><code>504 Gateway Timeout</code></td>
+<td>A configured upstream timeout elapsed before the response started.</td>
+</tr>
+</tbody>
+</table>
+<p>If a connection fails after response bytes or a WebSocket upgrade have started,
+Via terminates the stream because it can no longer replace the response with an
+error page.</p>
+<h2 id="debug-a-route-or-upstream">Debug a route or upstream</h2>
+<p>Run with debug logging:</p>
+<pre><code class="language-sh">via run --debug -c via.yaml
+</code></pre>
+<p>For one listener only, enable it in YAML:</p>
+<pre><code class="language-yaml">listen: &quot;:8080&quot;
+debug: true
+proxy_pass: http://localhost:3000
+</code></pre>
+<p>Debug records show the incoming request, selected route, upstream, and upstream
+status. Debug mode also shows configuration errors in the browser when Via can
+keep the listener running.</p>
+<p>Typical events are:</p>
+<ul>
+<li><code>routing.miss</code> — no route matched;</li>
+<li><code>upstream.failed</code> — the upstream could not return a valid response;</li>
+<li><code>stream.failed</code> — a connection failed after response streaming began;</li>
+<li><code>config.rejected</code> — a replacement configuration was invalid.</li>
+</ul>
+<p>See <a href="../hot-reload/">Reload configuration</a> for the difference between production
+and debug behavior after an invalid edit.</p>
+<h2 id="systemd-logs">systemd logs</h2>
+<p>When Via runs as a service, inspect its logs with:</p>
+<pre><code class="language-sh">journalctl -u via -o cat
+journalctl -u via -o cat | grep 'event=request.completed'
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../hot-reload/" class="btn btn-neutral float-left" title="Reload configuration"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../cli/" class="btn btn-neutral float-right" title="CLI reference">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../hot-reload/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../cli/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
