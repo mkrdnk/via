@@ -6,4 +6,4 @@ routes:
   - path: /
     static: /etc/via/start-page
   - path: /_via/health/
-    proxy_pass: 200
+    return: 200
