@@ -51,12 +51,21 @@ describe Via::Configuration::Model do
       proxy_pass: http://localhost:3000
       YAML
 
+    config.enable.should be_true
     validated = config.validate
     validated.listen.should eq(Via::ListenAddress.new("0.0.0.0", 8080))
     validated.routes.should eq([
       Via::Route.new(nil, "/", URI.parse("http://localhost:3000")),
     ])
     validated.websocket_shutdown_timeout.should eq(5.seconds)
+  end
+
+  it "loads enable as false" do
+    config = Via::Config.from_yaml <<-YAML
+      enable: false
+      YAML
+
+    config.enable.should be_false
   end
 
   it "applies top-level host to the single upstream route" do
@@ -574,6 +583,40 @@ describe Via::Configuration::Model do
       ])
       configs[0].routes.first.host.should eq("first.example.com")
       configs[1].routes.first.upstream.should eq(URI.parse("http://localhost:4000"))
+    end
+  end
+
+  it "ignores disabled configuration files before validation" do
+    with_temp_directory do |directory|
+      File.write(File.join(directory, "disabled.yaml"), <<-YAML)
+        enable: false
+        listen: invalid
+        proxy_pass: not-a-url
+        YAML
+      File.write(File.join(directory, "enabled.yaml"), <<-YAML)
+        listen: ":8080"
+        proxy_pass: http://localhost:3000
+        YAML
+
+      models = Via::ConfigLoader.new(directory).load_all
+      models.size.should eq(1)
+      models.first.config_file.should eq(File.join(directory, "enabled.yaml"))
+      models.first.validate.listen.should eq(Via::ListenAddress.new("0.0.0.0", 8080))
+    end
+  end
+
+  it "loads no listeners when all configurations are disabled" do
+    with_temp_directory do |directory|
+      path = File.join(directory, "disabled.yaml")
+      File.write(path, "enable: false\n")
+      loader = Via::ConfigLoader.new(path)
+
+      loader.load_all.should be_empty
+      expect_raises(Via::ConfigurationError, "has no enabled listeners") do
+        loader.load
+      end
+
+      Via::ConfigLoader.new(directory).load_all.should be_empty
     end
   end
 
@@ -1466,6 +1509,21 @@ describe Via::CLI do
       output.to_s.should contain("Configuration is valid: #{config_path}")
     ensure
       listener.try(&.close)
+    end
+  end
+
+  it "accepts a disabled configuration without starting a listener" do
+    with_temp_directory do |directory|
+      config_path = File.join(directory, "via.yaml")
+      File.write(config_path, "enable: false\n")
+
+      run_output = IO::Memory.new
+      Via::CLI.run(["run", "-c", config_path], run_output, IO::Memory.new).should eq(0)
+      run_output.to_s.should contain("No listeners are enabled: #{config_path}")
+
+      check_output = IO::Memory.new
+      Via::CLI.run(["check", "-c", config_path], check_output, IO::Memory.new).should eq(0)
+      check_output.to_s.should contain("Configuration is valid; no listeners are enabled")
     end
   end
 

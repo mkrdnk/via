@@ -105,6 +105,10 @@ module Via
 
       path = config_path
       models = Configuration::Loader.new(path).load_all
+      if models.empty?
+        output.puts "No listeners are enabled: #{path}"
+        return 0
+      end
       validators = models.map { |model| Configuration::Validator.new(model) }
       listens = validators.map(&.validate_listen)
       reject_duplicate_listens(listens)
@@ -223,6 +227,10 @@ module Via
       return exit_code if requested_exit
 
       models = Configuration::Loader.new(config_path).load_all
+      if models.empty?
+        output.puts "Configuration is valid; no listeners are enabled: #{config_path}"
+        return 0
+      end
       validators = models.map { |model| Configuration::Validator.new(model) }
       listens = validators.map(&.validate_listen)
       reject_duplicate_listens(listens)

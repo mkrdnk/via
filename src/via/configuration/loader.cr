@@ -7,6 +7,9 @@ module Via::Configuration
 
     def load : Model
       models = load_all
+      if models.empty?
+        raise Error.new("Configuration #{@path} has no enabled listeners")
+      end
       if models.size > 1
         raise Error.new(
           "Configuration directory #{@path} defines multiple listeners; load all listener configurations"
@@ -19,7 +22,8 @@ module Via::Configuration
       if File.directory?(@path)
         load_directory
       else
-        [Model.load(@path)]
+        model = Model.load(@path)
+        model.enable ? [model] : [] of Model
       end
     rescue ex : File::Error
       raise Error.new("Could not read configuration #{@path}: #{ex.message}")
@@ -31,7 +35,9 @@ module Via::Configuration
         raise Error.new("Configuration directory #{@path} contains no YAML files")
       end
 
-      fragments = files.map { |file| Model.load(file) }
+      fragments = files.map { |file| Model.load(file) }.select(&.enable)
+      return [] of Model if fragments.empty?
+
       groups = {} of ListenAddress => Array(Model)
       fragments.each do |fragment|
         next unless fragment.listen

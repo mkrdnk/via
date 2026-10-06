@@ -93,6 +93,7 @@ module Via::Configuration
 
     getter listen : String?
     getter host : String?
+    getter enable : Bool = true
     getter debug : Bool?
     getter log_file : String?
     getter log_level : String?
@@ -110,6 +111,7 @@ module Via::Configuration
 
     def initialize(
       @listen : String? = nil,
+      @enable : Bool = true,
       @debug : Bool? = nil,
       @log_file : String? = nil,
       @log_level : String? = nil,
