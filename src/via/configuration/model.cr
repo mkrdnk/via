@@ -66,6 +66,7 @@ module Via::Configuration
     @[YAML::Field(key: "return")]
     getter return_config : ReturnValue?
 
+    getter strip_prefix : Bool?
     getter timeouts : Timeouts?
   end
 

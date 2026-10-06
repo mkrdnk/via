@@ -15,5 +15,6 @@ module Via::Routing
     static_target : StaticTarget? = nil,
     response_status : Int32? = nil,
     timeouts : Timeouts = Timeouts.new,
-    return_target : ReturnTarget? = nil
+    return_target : ReturnTarget? = nil,
+    strip_prefix : Bool = false
 end

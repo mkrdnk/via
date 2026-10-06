@@ -105,10 +105,11 @@ module Via::Proxy
       io : IO,
       request : ::HTTP::Request,
       headers : ::HTTP::Headers,
+      resource : String = request.resource,
     ) : Nil
       ::HTTP::Request.new(
         request.method,
-        request.resource,
+        resource,
         headers,
         request.body
       ).to_io(io)

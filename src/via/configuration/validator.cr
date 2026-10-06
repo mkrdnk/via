@@ -108,6 +108,9 @@ module Via::Configuration
             "routes[#{index}] requires exactly one of proxy_pass, static, or return"
           )
         end
+        if !route.strip_prefix.nil? && !upstream.is_a?(String)
+          raise Error.new("routes[#{index}].strip_prefix requires an upstream URL")
+        end
 
         host = parse_host(route.host, "routes[#{index}].host")
         path = parse_path(route.path, index)
@@ -125,7 +128,8 @@ module Via::Configuration
             path,
             upstream,
             "routes[#{index}].proxy_pass",
-            route_timeouts
+            route_timeouts,
+            route.strip_prefix || false
           )
         elsif static_config
           if route.timeouts
@@ -163,6 +167,7 @@ module Via::Configuration
       value : ProxyPass,
       field = "proxy_pass",
       timeouts = Routing::Timeouts.new,
+      strip_prefix = false,
     ) : Routing::Route
       case value
       when String
@@ -171,7 +176,8 @@ module Via::Configuration
           host,
           path,
           parse_upstream(expanded, field),
-          timeouts: timeouts
+          timeouts: timeouts,
+          strip_prefix: strip_prefix
         )
       when Int32
         Routing::Route.new(

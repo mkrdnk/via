@@ -88,7 +88,14 @@ describe "WebSocket proxying" do
     with_server(upstream) do |upstream_address|
       config = Via::ValidatedConfig.new(
         Via::ListenAddress.new("127.0.0.1", 0),
-        [Via::Route.new("public.example.com", "/socket", URI.parse("http://#{upstream_address}"))]
+        [
+          Via::Route.new(
+            "public.example.com",
+            "/socket",
+            URI.parse("http://#{upstream_address}"),
+            strip_prefix: true
+          ),
+        ]
       )
       proxy = Via::Server.new(config, IO::Memory.new)
       proxy_address = proxy.bind
@@ -117,7 +124,7 @@ describe "WebSocket proxying" do
         socket = HTTP::WebSocket.new(protocol)
 
         handshake.receive.should eq({
-          "/socket/chat?room=crystal",
+          "/chat?room=crystal",
           upstream_address.to_s,
           "public.example.com",
           "http",

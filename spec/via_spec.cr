@@ -227,6 +227,7 @@ describe Via::Configuration::Model do
         - host: API.Example.COM
           path: /api/
           proxy_pass: http://localhost:8000
+          strip_prefix: true
         - path: /
           proxy_pass: http://localhost:3000
       YAML
@@ -234,7 +235,23 @@ describe Via::Configuration::Model do
     routes = config.validate.routes
     routes[0].host.should eq("api.example.com")
     routes[0].path.should eq("/api")
+    routes[0].strip_prefix.should be_true
     routes[1].host.should be_nil
+    routes[1].strip_prefix.should be_false
+  end
+
+  it "only allows strip_prefix on routes with an upstream URL" do
+    config = Via::Config.from_yaml <<-YAML
+      listen: ":8080"
+      routes:
+        - path: /health
+          return: 204
+          strip_prefix: true
+      YAML
+
+    expect_raises(Via::ConfigurationError, "strip_prefix requires an upstream URL") do
+      config.validate
+    end
   end
 
   it "accepts an HTTP status as a proxy_pass target" do
@@ -1727,6 +1744,44 @@ describe Via::Proxy::Handler do
           "12",
           "request-body",
         })
+      ensure
+        proxy.close
+      end
+    end
+  end
+
+  it "strips the matched route prefix while preserving the query" do
+    upstream = HTTP::Server.new do |context|
+      context.response << context.request.resource
+    end
+
+    with_server(upstream) do |upstream_address|
+      routes = Via::Config.from_yaml(<<-YAML).validate.routes
+        listen: ":8080"
+        routes:
+          - path: /api
+            proxy_pass: http://#{upstream_address}
+            strip_prefix: true
+        YAML
+      config = Via::ValidatedConfig.new(
+        Via::ListenAddress.new("127.0.0.1", 0),
+        routes
+      )
+      proxy = Via::Server.new(config, IO::Memory.new)
+      proxy_address = proxy.bind
+      spawn proxy.listen
+
+      begin
+        users = HTTP::Client.get(
+          "http://#{proxy_address}/api/users?role=admin%2Fowner"
+        )
+        users.body.should eq("/users?role=admin%2Fowner")
+
+        exact = HTTP::Client.get("http://#{proxy_address}/api")
+        exact.body.should eq("/")
+
+        trailing_slash = HTTP::Client.get("http://#{proxy_address}/api/?page=2")
+        trailing_slash.body.should eq("/?page=2")
       ensure
         proxy.close
       end

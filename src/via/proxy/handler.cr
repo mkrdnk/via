@@ -162,6 +162,7 @@ module Via::Proxy
       target = "proxy"
       upstream = route.upstream.not_nil!
       upstream_name = upstream.to_s
+      upstream_resource = upstream_resource(request, route)
       @logger.debug(
         "routing.selected",
         request_id: id,
@@ -182,7 +183,7 @@ module Via::Proxy
             id,
             @scheme
           )
-          WebSocketTunnel.send_request(upstream_io, request, headers)
+          WebSocketTunnel.send_request(upstream_io, request, headers, upstream_resource)
           WebSocketTunnel.read_response(upstream_io) do |upstream_response|
             response.status = upstream_response.status
             @logger.debug(
@@ -218,7 +219,7 @@ module Via::Proxy
         key = PoolKey.new(upstream, route.timeouts)
         @clients[key].with do |client|
           headers = Via::HTTP::ForwardedHeaders.request(request, upstream, id, @scheme)
-          client.exec(request.method, request.resource, headers, request.body) do |upstream_response|
+          client.exec(request.method, upstream_resource, headers, request.body) do |upstream_response|
             response.status = upstream_response.status
             @logger.debug(
               "upstream.response",
@@ -277,6 +278,26 @@ module Via::Proxy
           duration_ms: (Time.instant - started_at.not_nil!).total_milliseconds.round(3),
           failure: failure
         )
+      end
+    end
+
+    private def upstream_resource(
+      request : ::HTTP::Request,
+      route : Routing::Route,
+    ) : String
+      return request.resource unless route.strip_prefix
+
+      path = if route.path == "/"
+               request.path
+             else
+               request.path.byte_slice(route.path.bytesize..)
+             end
+      path = "/" if path.empty?
+
+      if query = request.query
+        "#{path}?#{query}"
+      else
+        path
       end
     end
 
