@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.1/configuration/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Routes and configuration - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Routes and configuration";
+        var mkdocs_page_input_path = "configuration.md";
+        var mkdocs_page_url = "/docs/0.4.1/configuration/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Routes and configuration</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#single-upstream">Single upstream</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#routes">Routes</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#path-matching">Path matching</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#host-matching">Host matching</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#immediate-responses-and-redirects">Immediate responses and redirects</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#header-manipulation">Header manipulation</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#tls">TLS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#static-routes">Static routes</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#upstream-timeouts">Upstream timeouts</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#logging-and-diagnostics">Logging and diagnostics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#graceful-shutdown">Graceful shutdown</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-directories">Configuration directories</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#merge-one-listener-from-fragments">Merge one listener from fragments</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#run-multiple-listeners">Run multiple listeners</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#disabling-a-configuration">Disabling a configuration</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Configure</li>
+      <li class="breadcrumb-item active">Routes and configuration</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/configuration.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="configuration">Configuration</h1>
+<p>Via reads a strict YAML configuration. Unknown fields and invalid values cause
+startup to fail with a configuration error.</p>
+<h2 id="single-upstream">Single upstream</h2>
+<p>The smallest configuration sends every request to one upstream:</p>
+<pre><code class="language-yaml">listen: &quot;:8080&quot;
+proxy_pass: http://localhost:3000
+</code></pre>
+<p><code>listen</code> accepts:</p>
+<ul>
+<li><code>:PORT</code> to listen on all IPv4 interfaces;</li>
+<li><code>HOST:PORT</code>;</li>
+<li><code>[IPv6]:PORT</code>.</li>
+</ul>
+<p><code>proxy_pass</code> accepts an HTTP or HTTPS URL without a path, query, fragment, or
+credentials. For compatibility, an unquoted integer from <code>200</code> through <code>599</code>
+still returns that status directly, but new configurations should use
+<a href="#immediate-responses-and-redirects"><code>return</code></a>.</p>
+<p>The short form may include <code>host</code>. This limits the route to that request host:</p>
+<pre><code class="language-yaml">listen: &quot;:80&quot;
+host: example.com
+proxy_pass: https://$host
+</code></pre>
+<p><code>$host</code> in <code>proxy_pass</code> is replaced with the configured <code>host</code> during
+validation. It is rejected when the route has no <code>host</code>, so request input can
+never select an arbitrary upstream.</p>
+<h2 id="routes">Routes</h2>
+<p>Use <code>routes</code> to select different upstreams by host and path:</p>
+<pre><code class="language-yaml">listen: &quot;:8080&quot;
+
+routes:
+  - host: api.example.com
+    path: /api
+    proxy_pass: http://localhost:8000
+    strip_prefix: true
+
+  - path: /
+    proxy_pass: http://localhost:3000
+
+  - path: /admin
+    return: 403
+</code></pre>
+<p>Top-level <code>proxy_pass</code> and <code>routes</code> are mutually exclusive. Every route must
+have exactly one target: <code>proxy_pass</code>, <code>static</code>, or <code>return</code>. <code>host</code> is optional
+and <code>path</code> defaults to <code>/</code>.</p>
+<h3 id="path-matching">Path matching</h3>
+<p>Paths use segment-aware prefix matching:</p>
+<ul>
+<li><code>/api</code> matches <code>/api</code> and <code>/api/users</code>;</li>
+<li><code>/api</code> does not match <code>/apix</code>.</li>
+</ul>
+<p>The longest matching path wins. A trailing slash in a configured path is
+normalized away, so <code>/api/</code> and <code>/api</code> describe the same route.</p>
+<p>Proxy routes forward the original path and query unchanged by default. Set
+<code>strip_prefix: true</code> on a route with an upstream URL to remove its matched path
+before forwarding:</p>
+<pre><code class="language-yaml">routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    strip_prefix: true
+</code></pre>
+<p>This forwards <code>/api/users?active=true</code> as <code>/users?active=true</code>. A request for
+the route path itself (<code>/api</code>) is forwarded as <code>/</code>. On a <code>/</code> route,
+<code>strip_prefix</code> has no effect. Static routes always remove their matched prefix
+when resolving a file.</p>
+<h3 id="host-matching">Host matching</h3>
+<p>Host matching is exact and case-insensitive. The port in the incoming <code>Host</code>
+header is ignored. For routes with equal paths, a matching host-specific route
+takes precedence over a route without <code>host</code>. A route without <code>host</code> is the
+fallback for any hostname.</p>
+<p>Duplicate normalized host/path pairs are rejected. If no route matches, Via
+responds with <code>404 Not Found</code>.</p>
+<h3 id="immediate-responses-and-redirects">Immediate responses and redirects</h3>
+<p>Use <code>return</code> to respond without contacting an upstream:</p>
+<pre><code class="language-yaml">listen: &quot;:80&quot;
+
+routes:
+  - path: /admin
+    return: 403
+
+  - host: example.com
+    path: /
+    return: 301 https://$host$query
+</code></pre>
+<p><code>return</code> accepts an unquoted integer from <code>200</code> through <code>599</code>. Via renders its
+built-in status page with a request ID. Statuses that prohibit response content
+(<code>204</code>, <code>205</code>, and <code>304</code>) remain empty.</p>
+<p>To redirect, use <code>STATUS LOCATION</code>. Redirect locations are supported for <code>301</code>,
+<code>302</code>, <code>303</code>, <code>307</code>, and <code>308</code>; they may be absolute URLs or relative
+references. Redirect responses have an empty body. Locations support:</p>
+<ul>
+<li><code>$host</code>, replaced during validation with the route's configured <code>host</code>;</li>
+<li><code>$query</code>, replaced for each request with <code>?</code> and the original encoded query
+  string, or with an empty string when the request has no query.</li>
+</ul>
+<p>A location containing <code>$host</code> requires the route to declare <code>host</code>. This keeps
+an arbitrary request <code>Host</code> from selecting the redirect destination. Other
+variables are rejected.</p>
+<h3 id="header-manipulation">Header manipulation</h3>
+<p>Proxy routes can set or remove request and response headers:</p>
+<pre><code class="language-yaml">routes:
+  - host: api.example.com
+    proxy_pass: http://localhost:8000
+
+    headers:
+      request:
+        set:
+          X-Service: api
+        remove:
+          - X-Powered-By
+
+      response:
+        set:
+          X-Frame-Options: DENY
+        remove:
+          - X-Upstream-Only
+</code></pre>
+<p><code>request</code> rules modify the headers sent to the upstream. <code>response</code> rules
+modify the headers returned to the client, including WebSocket handshake
+responses. Under either direction:</p>
+<ul>
+<li><code>set</code> maps a header name to one value, replacing any existing values;</li>
+<li><code>remove</code> lists headers to delete;</li>
+<li>names are case-insensitive;</li>
+<li>a header cannot appear in both <code>set</code> and <code>remove</code>.</li>
+</ul>
+<p>Header rules are only valid on routes whose <code>proxy_pass</code> is an HTTP or HTTPS
+URL. Via rejects invalid names and values. It also protects headers whose
+modification would conflict with HTTP framing or Via's forwarding policy:</p>
+<ul>
+<li>hop-by-hop headers (<code>Connection</code>, <code>Keep-Alive</code>, <code>Proxy-Authenticate</code>,
+  <code>Proxy-Authorization</code>, <code>TE</code>, <code>Trailer</code>, <code>Transfer-Encoding</code>, and <code>Upgrade</code>);</li>
+<li><code>Content-Length</code> and <code>X-Request-ID</code>;</li>
+<li>on requests, <code>Host</code>, <code>X-Forwarded-For</code>, <code>X-Forwarded-Host</code>, and
+  <code>X-Forwarded-Proto</code>;</li>
+<li>on responses, <code>Server</code>.</li>
+</ul>
+<h2 id="tls">TLS</h2>
+<p>Add a certificate and private key to terminate TLS:</p>
+<pre><code class="language-yaml">listen: &quot;:443&quot;
+
+tls:
+  cert: /etc/via/cert.pem
+  key: /etc/via/key.pem
+
+proxy_pass: http://localhost:8000
+</code></pre>
+<p>Both files must exist and be readable. See <a href="../tls/">TLS</a> for certificate
+validation, reload behavior, and current limitations.</p>
+<h2 id="static-routes">Static routes</h2>
+<p>A route may serve a directory instead of proxying:</p>
+<pre><code class="language-yaml">routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+
+  - path: /
+    static: ./dist
+</code></pre>
+<p>For SPA fallback behavior, use the object form:</p>
+<pre><code class="language-yaml">routes:
+  - path: /
+    static:
+      root: ./dist
+      fallback: index.html
+</code></pre>
+<p>Each route must contain exactly one of <code>proxy_pass</code>, <code>static</code>, or <code>return</code>. See
+<a href="../static-files/">Static files</a> for path mapping, caching, range requests, and
+security behavior.</p>
+<h2 id="upstream-timeouts">Upstream timeouts</h2>
+<p>Set connection, read, and write timeouts for proxied upstream requests:</p>
+<pre><code class="language-yaml">listen: &quot;:443&quot;
+timeouts:
+  connect: 5s
+  read: 30s
+  write: 30s
+
+routes:
+  - path: /
+    proxy_pass: http://localhost:3000
+    timeouts:
+      connect: 10s
+</code></pre>
+<p>Top-level values apply to every proxy route. A route-level <code>timeouts</code> block
+overrides only the fields it contains, so this example uses a 10-second connect
+timeout and inherits the 30-second read and write timeouts.</p>
+<p>Durations must be positive and use <code>ms</code>, <code>s</code>, <code>m</code>, or <code>h</code>; decimal values such
+as <code>1.5s</code> are accepted. Omitted fields keep Crystal's default of no timeout.
+Timeouts cover HTTP traffic and WebSocket connections. A timeout before the
+downstream response starts returns <code>504 Gateway Timeout</code>.</p>
+<h2 id="logging-and-diagnostics">Logging and diagnostics</h2>
+<p>Operational logs go to stderr at <code>INFO</code> level by default. Set <code>log_file</code> to
+append them to a file and <code>log_level</code> to change the minimum severity:</p>
+<pre><code class="language-yaml">listen: &quot;:8000&quot;
+log_file: /var/log/via.log
+log_level: INFO
+proxy_pass: http://localhost:3000
+</code></pre>
+<p>Supported levels are <code>DEBUG</code>, <code>INFO</code>, <code>WARN</code>, and <code>ERROR</code>. See
+<a href="../logging/">Logs and troubleshooting</a> for output, overrides, and request IDs.</p>
+<p>To enable diagnostics and verbose proxy logs for only this listener, set
+<code>debug: true</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:8000&quot;
+debug: true
+proxy_pass: http://localhost:3000
+</code></pre>
+<p>This selects the <code>DEBUG</code> log level and shows configuration errors in the browser
+when Via can keep the listener running. In a directory with multiple listeners,
+other listeners remain in production mode.</p>
+<h2 id="graceful-shutdown">Graceful shutdown</h2>
+<p>Graceful shutdown is enabled by default and needs no configuration. On
+<code>SIGINT</code> or <code>SIGTERM</code>, Via stops accepting connections, waits for active HTTP
+requests, gives upgraded WebSocket connections five seconds to finish, closes
+the remaining WebSockets and upstream connection pools, and exits.</p>
+<p>To change only the WebSocket grace period for a listener:</p>
+<pre><code class="language-yaml">listen: &quot;:8080&quot;
+shutdown:
+  websocket_timeout: 8s
+proxy_pass: http://localhost:3000
+</code></pre>
+<p><code>websocket_timeout</code> accepts the same positive duration syntax as upstream
+timeouts. The default five-second grace period fits within Docker's default
+ten-second stop timeout. Active HTTP requests are allowed to finish before this
+period starts, so configure the orchestrator's total stop timeout accordingly.</p>
+<h2 id="configuration-directories">Configuration directories</h2>
+<p><code>-c</code> accepts either one YAML file or a directory containing <code>.yaml</code> and <code>.yml</code>
+fragments.</p>
+<h3 id="merge-one-listener-from-fragments">Merge one listener from fragments</h3>
+<p>Files are merged in lexical filename order:</p>
+<pre><code class="language-text">/etc/via/config/
+├── 00-server.yaml
+├── 10-api.yaml
+└── 20-app.yaml
+</code></pre>
+<p><code>00-server.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:8080&quot;
+</code></pre>
+<p><code>10-api.yaml</code>:</p>
+<pre><code class="language-yaml">routes:
+  - host: api.example.com
+    path: /
+    proxy_pass: http://localhost:8000
+</code></pre>
+<p><code>20-app.yaml</code>:</p>
+<pre><code class="language-yaml">routes:
+  - path: /
+    proxy_pass: http://localhost:3000
+</code></pre>
+<p>When a directory contains one <code>listen</code> value, all files remain fragments of
+that listener: <code>listen</code> may be repeated, files without it are accepted, and
+route arrays are concatenated.</p>
+<h3 id="run-multiple-listeners">Run multiple listeners</h3>
+<p>A directory may also define multiple listeners. In that mode every YAML file
+must declare <code>listen</code>; files with the same value are merged into one listener,
+while distinct values run concurrently with independent routes and TLS:</p>
+<pre><code class="language-text">/etc/via/config/
+├── 10-http.yaml
+└── 20-https.yaml
+</code></pre>
+<p><code>10-http.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:80&quot;
+host: example.com
+proxy_pass: https://$host
+</code></pre>
+<p><code>20-https.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:443&quot;
+tls:
+  cert: /etc/via/cert.pem
+  key: /etc/via/key.pem
+proxy_pass: http://localhost:3000
+</code></pre>
+<p>Within each listener, <code>host</code>, <code>debug</code>, <code>log_file</code>, <code>log_level</code>, top-level
+<code>proxy_pass</code>, <code>timeouts</code>, <code>shutdown</code>, and <code>tls</code> may each be declared at most
+once. The normal validation rules are applied after merging. A file without
+<code>listen</code> is rejected when multiple listeners exist because Via cannot determine
+which listener should receive it. Files with <code>enable: false</code> are ignored before
+these rules are applied.</p>
+<h3 id="disabling-a-configuration">Disabling a configuration</h3>
+<p>Configurations are enabled by default. Set <code>enable: false</code> at the top level to
+skip a file without deleting or renaming it:</p>
+<pre><code class="language-yaml">enable: false
+listen: &quot;:80&quot;
+proxy_pass: http://localhost:3000
+</code></pre>
+<p>Via parses the file as strict YAML, then excludes it before listener and route
+validation. This means a disabled file does not need a complete <code>listen</code> or
+route configuration, although its fields must still use valid YAML types and
+known names.</p>
+<p>Other enabled listeners and fragments continue to run. If every file is
+disabled, <code>via run</code> exits successfully without binding a listener, and
+<code>via check</code> reports the configuration as valid with no enabled listeners.</p>
+<p>See <a href="../hot-reload/">Reload configuration</a> for reload behavior.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../getting-started/" class="btn btn-neutral float-left" title="Install and run"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../proxying/" class="btn btn-neutral float-right" title="Proxying and WebSockets">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../getting-started/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../proxying/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.1/container/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Run in a container - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Run in a container";
+        var mkdocs_page_input_path = "container.md";
+        var mkdocs_page_url = "/docs/0.4.1/container/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Run in a container</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#pull-a-release-image">Pull a release image</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configure-and-run-via">Configure and run Via</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#check-configuration-and-view-logs">Check configuration and view logs</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Deploy</li>
+      <li class="breadcrumb-item active">Run in a container</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/container.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="run-in-a-container">Run in a container</h1>
+<p>The Via image runs as the unprivileged user <code>via</code> with UID and GID <code>10001</code>.</p>
+<h2 id="pull-a-release-image">Pull a release image</h2>
+<p>Release images are available from GitHub Container Registry for x86-64 and
+ARM64. Replace <code>VERSION</code> with a published Via version:</p>
+<pre><code class="language-sh">docker pull ghcr.io/mkrdnk/via:VERSION
+</code></pre>
+<p>Stable releases are also tagged as <code>latest</code>.</p>
+<h2 id="configure-and-run-via">Configure and run Via</h2>
+<p>Create a configuration directory:</p>
+<pre><code class="language-sh">mkdir -p config
+cat &gt; config/via.yaml &lt;&lt;'YAML'
+listen: &quot;:8080&quot;
+proxy_pass: http://host.docker.internal:3000
+YAML
+</code></pre>
+<p>Run the container and mount the directory at Via's default configuration path:</p>
+<pre><code class="language-sh">docker run --rm --name via \
+  --publish 8080:8080 \
+  --add-host host.docker.internal:host-gateway \
+  --mount type=bind,source=&quot;$(pwd)/config&quot;,target=/etc/via,readonly \
+  ghcr.io/mkrdnk/via:VERSION
+</code></pre>
+<p>The <code>host.docker.internal</code> mapping lets Via reach a service listening on port
+3000 of the Docker host. When the upstream runs in another container, attach
+both containers to the same Docker network and use the upstream container or
+Compose service name instead.</p>
+<p>Mount the entire configuration directory rather than one file so atomic file
+replacements remain visible to Via's configuration watcher. On an SELinux
+system, give the bind mount an appropriate container file label.</p>
+<h2 id="check-configuration-and-view-logs">Check configuration and view logs</h2>
+<p>The image entrypoint is <code>via</code>, and its default command is <code>run</code>. Append another
+Via command to override that default:</p>
+<pre><code class="language-sh">docker run --rm \
+  --mount type=bind,source=&quot;$(pwd)/config&quot;,target=/etc/via,readonly \
+  ghcr.io/mkrdnk/via:VERSION check
+</code></pre>
+<p>Via writes operational logs to standard error by default, so they are available
+through the container runtime:</p>
+<pre><code class="language-sh">docker logs via
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../service/" class="btn btn-neutral float-left" title="Run as a service"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../hot-reload/" class="btn btn-neutral float-right" title="Reload configuration">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../service/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../hot-reload/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
