@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.2/proxying/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Proxying and WebSockets - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Proxying and WebSockets";
+        var mkdocs_page_input_path = "proxying.md";
+        var mkdocs_page_url = "/docs/0.4.2/proxying/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Proxying and WebSockets</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#request-target">Request target</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#host-and-forwarding-headers">Host and forwarding headers</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#websockets">WebSockets</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#body-streaming">Body streaming</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#route-header-rules">Route header rules</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#server-identity">Server identity</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#hop-by-hop-headers">Hop-by-hop headers</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#redirects">Redirects</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#limitations">Limitations</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Configure</li>
+      <li class="breadcrumb-item active">Proxying and WebSockets</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/proxying.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="proxying-and-websockets">Proxying and WebSockets</h1>
+<p>Via acts as an HTTP intermediary rather than forwarding every byte of the
+original HTTP message unchanged.</p>
+<h2 id="request-target">Request target</h2>
+<p>The request method, path, and query are forwarded unchanged by default. A proxy
+route can remove its matched path prefix before forwarding:</p>
+<pre><code class="language-yaml">routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    strip_prefix: true
+</code></pre>
+<p>With this route, <code>/api/users</code> is sent upstream as <code>/users</code>. The query string is
+preserved, and an exact request for <code>/api</code> is sent as <code>/</code>. Prefix stripping
+also applies to WebSocket handshakes.</p>
+<h2 id="host-and-forwarding-headers">Host and forwarding headers</h2>
+<p>Via applies the following request header policy:</p>
+<ul>
+<li><code>Host</code> is set to the selected upstream authority, including a non-default
+  port;</li>
+<li><code>X-Forwarded-Host</code> is set to the original <code>Host</code> header;</li>
+<li><code>X-Forwarded-Proto</code> is set by Via to the downstream scheme (<code>http</code> or
+  <code>https</code>);</li>
+<li>the direct client IP is appended to <code>X-Forwarded-For</code>.</li>
+</ul>
+<p>Via overwrites incoming <code>X-Forwarded-Host</code> and <code>X-Forwarded-Proto</code> values.
+An existing <code>X-Forwarded-For</code> chain is retained and the direct peer address is
+appended to it.</p>
+<h2 id="websockets">WebSockets</h2>
+<p>WebSocket proxying is automatic for routes with an HTTP or HTTPS upstream. No
+route-specific option is required:</p>
+<pre><code class="language-yaml">routes:
+  - path: /socket
+    proxy_pass: http://localhost:3000
+</code></pre>
+<p>Via recognizes an HTTP/1.1 <code>GET</code> request as a WebSocket handshake when it
+contains both <code>Upgrade: websocket</code> and the <code>Upgrade</code> token in <code>Connection</code>. It
+then:</p>
+<ol>
+<li>forwards the handshake with the normal <code>Host</code>, <code>X-Forwarded-*</code>, and
+   <code>X-Request-ID</code> policy;</li>
+<li>preserves <code>Sec-WebSocket-*</code> headers, including extension and subprotocol
+   negotiation;</li>
+<li>returns the upstream <code>101 Switching Protocols</code> response;</li>
+<li>relays traffic in both directions until either connection closes.</li>
+</ol>
+<p>Because Via relays the upgraded stream without decoding WebSocket frames, text,
+binary, continuation, ping, pong, and close frames pass through unchanged.
+Negotiated extensions are transparent as well.</p>
+<p>An upstream HTTP rejection such as <code>401 Unauthorized</code> is returned as a normal
+HTTP response, including its body. A connection or handshake failure before a
+response produces <code>502 Bad Gateway</code>. Downstream TLS termination and HTTPS
+upstreams work with WebSockets in the same way as ordinary requests.</p>
+<h2 id="body-streaming">Body streaming</h2>
+<p>Via does not read a complete upload or download into memory before forwarding
+it. Request and response bodies begin flowing as soon as data is available.</p>
+<p><code>Content-Length</code> is preserved when it is known and valid. Bodies without a
+known length use HTTP/1.1 chunked framing.</p>
+<p>If the downstream client disconnects, Via stops the transfer and discards the
+affected upstream connection. If an upstream disconnects before returning a
+response, Via returns <code>502 Bad Gateway</code>. Once response bytes have started,
+an upstream failure terminates the partial response because its status can no
+longer be replaced.</p>
+<h2 id="route-header-rules">Route header rules</h2>
+<p>Proxy routes can set or remove end-to-end headers in either direction:</p>
+<pre><code class="language-yaml">routes:
+  - path: /api
+    proxy_pass: http://localhost:8000
+    headers:
+      request:
+        set:
+          X-Service: api
+        remove:
+          - X-Powered-By
+      response:
+        set:
+          X-Frame-Options: DENY
+</code></pre>
+<p>Request rules run after Via constructs its forwarding headers. Response rules
+run after hop-by-hop headers have been removed. <code>set</code> replaces all existing
+values for that header; <code>remove</code> deletes it regardless of name casing. The same
+rules apply to WebSocket handshakes.</p>
+<p>Transport headers and Via-managed forwarding headers cannot be changed by route
+rules. See <a href="../configuration/#header-manipulation">Header manipulation</a> for the
+complete list.</p>
+<h2 id="server-identity">Server identity</h2>
+<p>Via adds this header to every response:</p>
+<pre><code class="language-http">Server: Via
+</code></pre>
+<p>The header intentionally omits the version number. Via replaces an upstream
+<code>Server</code> value and does not allow response header rules to change or remove its
+server identity. This policy also applies to static files, redirects, built-in
+error pages, and WebSocket handshakes.</p>
+<h2 id="hop-by-hop-headers">Hop-by-hop headers</h2>
+<p>Via removes standard hop-by-hop headers in both directions:</p>
+<ul>
+<li><code>Connection</code>;</li>
+<li><code>Keep-Alive</code>;</li>
+<li><code>Proxy-Authenticate</code>;</li>
+<li><code>Proxy-Authorization</code>;</li>
+<li><code>TE</code>;</li>
+<li><code>Trailer</code>;</li>
+<li><code>Transfer-Encoding</code>;</li>
+<li><code>Upgrade</code>.</li>
+</ul>
+<p>Headers named by the incoming <code>Connection</code> header are removed as well.
+Each HTTP transport then applies the correct framing for its own connection.
+This allows Via to receive a chunked body and send it onward with new chunk
+framing instead of forwarding the original chunks.</p>
+<p>End-to-end request and response headers are otherwise preserved unless changed
+by the selected route's header rules.</p>
+<h2 id="redirects">Redirects</h2>
+<p>Via forwards upstream redirect statuses and <code>Location</code> headers unchanged. It
+does not rewrite absolute or relative redirect targets.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Via does not currently provide retries, load balancing, response caching, or
+arbitrary body rewriting.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../configuration/" class="btn btn-neutral float-left" title="Routes and configuration"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../tls/" class="btn btn-neutral float-right" title="TLS">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../configuration/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../tls/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

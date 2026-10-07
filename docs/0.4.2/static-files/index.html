@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.2/static-files/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Static files - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Static files";
+        var mkdocs_page_input_path = "static-files.md";
+        var mkdocs_page_url = "/docs/0.4.2/static-files/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Static files</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#path-mapping">Path mapping</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#spa-fallback">SPA fallback</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#caching">Caching</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#range-requests">Range requests</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#filesystem-safety">Filesystem safety</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Configure</li>
+      <li class="breadcrumb-item active">Static files</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/static-files.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="static-files">Static files</h1>
+<p>Static routes serve files directly from a configured root:</p>
+<pre><code class="language-yaml">routes:
+  - path: /
+    static: ./dist
+</code></pre>
+<p>They support:</p>
+<ul>
+<li><code>GET</code> and <code>HEAD</code>;</li>
+<li>MIME types based on filename;</li>
+<li><code>index.html</code>;</li>
+<li><code>ETag</code> and <code>Last-Modified</code>;</li>
+<li><code>If-None-Match</code> and <code>If-Modified-Since</code>;</li>
+<li>single byte range requests;</li>
+<li>SPA fallback;</li>
+<li>protection against path traversal and symlink escapes.</li>
+</ul>
+<p>Other methods receive <code>405 Method Not Allowed</code> with <code>Allow: GET, HEAD</code>.</p>
+<h2 id="path-mapping">Path mapping</h2>
+<p>Via removes the matched route prefix when resolving a static file:</p>
+<pre><code class="language-yaml">routes:
+  - path: /assets
+    static: ./public
+</code></pre>
+<p>The request:</p>
+<pre><code class="language-text">/assets/css/app.css
+</code></pre>
+<p>maps to:</p>
+<pre><code class="language-text">&lt;public&gt;/css/app.css
+</code></pre>
+<p>Unlike static routes, <code>proxy_pass</code> routes forward the original path by default.
+They only remove it when configured with <code>strip_prefix: true</code>.</p>
+<p>A request for a directory without a trailing slash receives a permanent
+redirect to the slash form. Via then looks for <code>index.html</code> inside the
+directory. Directory listings are not generated.</p>
+<h2 id="spa-fallback">SPA fallback</h2>
+<p>Use the object form to serve a fallback when the requested file does not
+exist:</p>
+<pre><code class="language-yaml">routes:
+  - path: /
+    static:
+      root: ./dist
+      fallback: index.html
+</code></pre>
+<p>The fallback must be a readable file inside <code>root</code>. Via validates it when
+loading the configuration.</p>
+<h2 id="caching">Caching</h2>
+<p>Static responses include:</p>
+<pre><code class="language-text">ETag
+Last-Modified
+</code></pre>
+<p>Matching <code>If-None-Match</code> or <code>If-Modified-Since</code> requests receive
+<code>304 Not Modified</code>.</p>
+<h2 id="range-requests">Range requests</h2>
+<p>Via supports one <code>bytes</code> range, including open-ended and suffix forms:</p>
+<pre><code class="language-text">Range: bytes=100-199
+Range: bytes=100-
+Range: bytes=-100
+</code></pre>
+<p>A successful range receives <code>206 Partial Content</code>, <code>Content-Range</code>, and the
+range <code>Content-Length</code>. Invalid, unsatisfiable, and multi-range requests
+receive <code>416 Range Not Satisfiable</code>.</p>
+<h2 id="filesystem-safety">Filesystem safety</h2>
+<p>Via URL-decodes the request path before resolving it. It rejects:</p>
+<ul>
+<li><code>..</code> path segments, including percent-encoded traversal;</li>
+<li>NUL bytes;</li>
+<li>backslash separators;</li>
+<li>resolved paths outside the configured root;</li>
+<li>symlinks whose target is outside the configured root.</li>
+</ul>
+<p>Files are streamed from disk and are not loaded into memory in full.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../tls/" class="btn btn-neutral float-left" title="TLS"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../service/" class="btn btn-neutral float-right" title="Run as a service">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../tls/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../service/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

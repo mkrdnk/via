@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.2/tls/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>TLS - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "TLS";
+        var mkdocs_page_input_path = "tls.md";
+        var mkdocs_page_url = "/docs/0.4.2/tls/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">TLS</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#certificate-reload">Certificate reload</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#lets-encrypt-with-certbot">Let's Encrypt with Certbot</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-serve-the-challenge-over-http">1. Serve the challenge over HTTP</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-issue-and-deploy-the-certificate">2. Issue and deploy the certificate</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-enable-https">3. Enable HTTPS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-enable-automatic-renewal">4. Enable automatic renewal</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#limitations">Limitations</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Configure</li>
+      <li class="breadcrumb-item active">TLS</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/tls.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="tls">TLS</h1>
+<p>Via supports TLS termination for HTTP/1.1 using certificate files. You can
+manage them yourself or <a href="#lets-encrypt-with-certbot">automate issuance and renewal with Certbot</a>.</p>
+<pre><code class="language-yaml">listen: &quot;:443&quot;
+
+tls:
+  cert: /etc/via/cert.pem
+  key: /etc/via/key.pem
+
+proxy_pass: http://localhost:8000
+</code></pre>
+<p>The certificate file may contain a certificate chain. The private key must
+match the leaf certificate. Via validates that both paths are readable and
+asks OpenSSL to validate their contents before starting or reloading.</p>
+<p>Requests accepted by a TLS listener are sent upstream with:</p>
+<pre><code class="language-text">X-Forwarded-Proto: https
+</code></pre>
+<p>The upstream itself may use either HTTP or HTTPS independently of downstream
+TLS termination.</p>
+<h2 id="certificate-reload">Certificate reload</h2>
+<p>Changing <code>tls.cert</code> or <code>tls.key</code> triggers the normal debounced configuration
+reload. Via loads and validates the replacement files before applying them:</p>
+<ul>
+<li>existing TLS connections continue with their established session;</li>
+<li>new connections use the replacement certificate;</li>
+<li>a certificate or key loading error keeps the previous certificate active;</li>
+<li>debug mode enters diagnostic state after a reload error.</li>
+</ul>
+<p>Enabling or disabling TLS changes the listener transport and therefore
+requires restarting Via. Changing <code>listen</code> also requires a restart.</p>
+<h2 id="lets-encrypt-with-certbot">Let's Encrypt with Certbot</h2>
+<p>Certbot handles ACME account registration, issuance, and scheduled renewal.
+Via serves HTTP-01 challenge files and reloads the deployed certificate without
+a restart. No ACME credentials or Certbot process run inside Via.</p>
+<p>This walkthrough targets the <a href="../service/">packaged systemd service</a> on Linux.
+It requires:</p>
+<ul>
+<li>a TLS-enabled Via build and the <code>via</code> service user/group;</li>
+<li>Certbot, the OpenSSL command-line tool, and GNU coreutils;</li>
+<li>DNS for every requested domain pointing to this server, including any AAAA
+  records, and public access to TCP ports 80 and 443;</li>
+<li>root access for Certbot and its deploy hook.</li>
+</ul>
+<p>HTTP-01 cannot issue wildcard certificates. One certificate can include
+multiple names using repeated <code>-d</code> options. Via still uses one certificate per
+listener, not separate certificates selected through SNI.</p>
+<h3 id="1-serve-the-challenge-over-http">1. Serve the challenge over HTTP</h3>
+<p>Replace <code>example.com</code> and the email address below with your own values.
+Create the webroot before validating the configuration:</p>
+<pre><code class="language-sh">sudo install -d -m 0755 /var/lib/via/acme/.well-known/acme-challenge
+</code></pre>
+<p>Create <code>/etc/via/10-http.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:80&quot;
+routes:
+  - host: example.com
+    path: /.well-known/acme-challenge
+    static: /var/lib/via/acme/.well-known/acme-challenge
+  - host: example.com
+    path: /
+    return: 301 https://example.com
+</code></pre>
+<p>Static routes remove their matched prefix, so the static root must point at
+the <strong>challenge directory</strong>, while Certbot's <code>--webroot-path</code> below points at
+<code>/var/lib/via/acme</code>. The longer challenge route takes precedence over the
+redirect. This redirect goes to the HTTPS home page; it does not preserve the
+request path. Repeat both routes for additional certificate domains.</p>
+<p>Disable the packaged welcome configuration with <code>enable: false</code> in
+<code>/etc/via/example-config.yaml</code>, and ensure every remaining enabled YAML file
+declares its listener. Do not enable the HTTPS configuration yet: the
+certificate does not exist.</p>
+<pre><code class="language-sh">sudo -u via via check -c /etc/via
+sudo systemctl restart via
+</code></pre>
+<p>Adding the port 80 listener requires a restart. Check reachability from outside
+the server before contacting Let's Encrypt:</p>
+<pre><code class="language-sh">printf 'acme-probe\n' | sudo tee /var/lib/via/acme/.well-known/acme-challenge/probe
+curl --fail http://example.com/.well-known/acme-challenge/probe
+sudo rm /var/lib/via/acme/.well-known/acme-challenge/probe
+</code></pre>
+<p>The response must be <code>acme-probe</code>, not a redirect or an application page.</p>
+<h3 id="2-issue-and-deploy-the-certificate">2. Issue and deploy the certificate</h3>
+<p>DEB and RPM packages include <code>/usr/libexec/via/certbot-deploy</code>. For a
+source installation, install the same helper from the repository:</p>
+<pre><code class="language-sh">sudo install -D -o root -g root -m 0755 \
+  packaging/certbot-deploy.sh /usr/libexec/via/certbot-deploy
+</code></pre>
+<p>First test HTTP-01 against Let's Encrypt's staging environment. A dry run does
+not save a certificate or run deploy hooks by default:</p>
+<pre><code class="language-sh">sudo certbot certonly --dry-run --webroot \
+  --webroot-path /var/lib/via/acme \
+  --cert-name example.com -d example.com \
+  --email admin@example.com --agree-tos --non-interactive
+</code></pre>
+<p>Then issue the trusted certificate and register its deploy hook:</p>
+<pre><code class="language-sh">sudo certbot certonly --webroot \
+  --webroot-path /var/lib/via/acme \
+  --cert-name example.com -d example.com \
+  --email admin@example.com --agree-tos --non-interactive \
+  --deploy-hook '/usr/libexec/via/certbot-deploy example.com'
+</code></pre>
+<p>Use the same certificate name in <code>--cert-name</code> and the hook argument. Certbot
+saves this hook with the renewal configuration. It is scoped to this lineage,
+not installed globally for unrelated certificates.</p>
+<p>The hook validates the certificate and private key, checks that they match,
+and atomically replaces <code>/etc/via/tls/example.com/tls.pem</code>. This single PEM
+contains <strong>both the full chain and the private key</strong>. It is owned by
+<code>root:via</code>, mode <code>0640</code>, inside restricted directories. Do not expose it as
+static content or make it world-readable. Via does not need access to
+<code>/etc/letsencrypt</code>.</p>
+<p>If the certificate already exists, Certbot may not issue it again and thus
+may not invoke the hook. Deploy the existing lineage explicitly:</p>
+<pre><code class="language-sh">sudo env RENEWED_LINEAGE=/etc/letsencrypt/live/example.com \
+  /usr/libexec/via/certbot-deploy example.com
+</code></pre>
+<p>For an existing lineage, explicitly save the hook and webroot settings.
+Certbot 2.3.0 and newer provide <code>reconfigure</code>, which tests the settings against
+staging before saving them:</p>
+<pre><code class="language-sh">sudo certbot reconfigure --cert-name example.com \
+  --webroot --webroot-path /var/lib/via/acme \
+  --deploy-hook '/usr/libexec/via/certbot-deploy example.com'
+</code></pre>
+<p>With older versions, test the new options first, then perform one live renewal
+to persist them:</p>
+<pre><code class="language-sh">sudo certbot renew --cert-name example.com --dry-run \
+  --webroot --webroot-path /var/lib/via/acme \
+  --deploy-hook '/usr/libexec/via/certbot-deploy example.com'
+sudo certbot renew --cert-name example.com --force-renewal \
+  --webroot --webroot-path /var/lib/via/acme \
+  --deploy-hook '/usr/libexec/via/certbot-deploy example.com'
+</code></pre>
+<p>Only force renewal once after a successful dry run; repeated live issuance can
+hit CA rate limits. Verify that the renewal file contains the helper command
+(Certbot may store it under the historical <code>renew_hook</code> name):</p>
+<pre><code class="language-sh">sudo grep -F '/usr/libexec/via/certbot-deploy example.com' \
+  /etc/letsencrypt/renewal/example.com.conf
+</code></pre>
+<h3 id="3-enable-https">3. Enable HTTPS</h3>
+<p>Create <code>/etc/via/20-https.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:443&quot;
+tls:
+  cert: /etc/via/tls/example.com/tls.pem
+  key: /etc/via/tls/example.com/tls.pem
+routes:
+  - host: example.com
+    path: /
+    proxy_pass: http://127.0.0.1:3000
+</code></pre>
+<p>Both paths intentionally reference the same PEM bundle. Adjust the upstream
+and add routes for any additional names on the certificate.</p>
+<pre><code class="language-sh">sudo -u via via check -c /etc/via
+sudo systemctl restart via
+curl --fail https://example.com/
+</code></pre>
+<p>This restart adds the HTTPS listener. Later certificate renewals do not need
+a restart or reload signal.</p>
+<h3 id="4-enable-automatic-renewal">4. Enable automatic renewal</h3>
+<p>Enable the renewal scheduler provided by your Certbot installation. For
+example, Debian/Ubuntu packages commonly provide:</p>
+<pre><code class="language-sh">sudo systemctl enable --now certbot.timer
+systemctl list-timers --all
+sudo certbot renew --dry-run
+</code></pre>
+<p>Other distributions or Snap installations use different timer names or cron.
+Verify the installed scheduler rather than creating a second one. Keep port
+80 and the challenge route available for future renewals.</p>
+<p>To exercise the saved deploy hook too, first check whether
+<code>certbot renew --help all</code> lists <code>--run-deploy-hooks</code>. If supported:</p>
+<pre><code class="language-sh">sudo certbot renew --cert-name example.com --dry-run --run-deploy-hooks
+</code></pre>
+<p>With <code>--run-deploy-hooks</code>, Certbot passes the current live certificate to the
+hook, not the untrusted staging certificate. Older versions without this flag
+can test the two steps separately: run plain <code>certbot renew --dry-run</code>, then
+run the explicit <code>RENEWED_LINEAGE</code> deployment command from step 2. Normal
+successful renewals deploy automatically; Via detects the replacement PEM and
+uses it for new connections.</p>
+<p>Monitor the Certbot scheduler, <code>/var/log/letsencrypt/letsencrypt.log</code>, certificate
+expiry, and <code>journalctl -u via -o cat</code>. A failed issuance leaves the existing
+certificate in place. A hook failure also preserves the previously deployed
+PEM, but Certbot may already have renewed its own copy: fix the error and rerun
+the explicit deployment command rather than waiting for the next renewal.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Via supports one certificate and key pair per listener. SNI-based multiple
+certificates and a built-in ACME client are not supported. Certificate
+automation runs externally through Certbot.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../proxying/" class="btn btn-neutral float-left" title="Proxying and WebSockets"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../static-files/" class="btn btn-neutral float-right" title="Static files">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../proxying/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../static-files/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

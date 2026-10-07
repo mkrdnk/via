@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.2/getting-started/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Install and run - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Install and run";
+        var mkdocs_page_input_path = "getting-started.md";
+        var mkdocs_page_url = "/docs/0.4.2/getting-started/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Install and run</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#install-a-release">Install a release</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#installer-fallback">Installer fallback</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#create-a-configuration">Create a configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#run-via">Run Via</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next steps</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">CLI reference</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Install and run</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/getting-started.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="install-and-run">Install and run</h1>
+<p>Choose the installation method that fits the deployment:</p>
+<ul>
+<li>DEB or RPM packages are recommended for systemd hosts;</li>
+<li>the binary archive works without package installation;</li>
+<li>the installer is a fallback for a quick setup;</li>
+<li>the container image is covered in <a href="../container/">Run in a container</a>.</li>
+</ul>
+<h2 id="install-a-release">Install a release</h2>
+<p>Download the file for your system and its matching <code>.sha256</code> file from
+<a href="https://github.com/mkrdnk/via/releases">GitHub Releases</a>:</p>
+<pre><code class="language-text">via-VERSION-linux-x86_64.deb
+via-VERSION-linux-aarch64.deb
+via-VERSION-linux-x86_64.rpm
+via-VERSION-linux-aarch64.rpm
+via-VERSION-linux-x86_64-bin.tar.xz
+via-VERSION-linux-aarch64-bin.tar.xz
+</code></pre>
+<p>Use the DEB package on Debian 13:</p>
+<pre><code class="language-sh">sha256sum --check via-VERSION-linux-x86_64.deb.sha256
+sudo apt install ./via-VERSION-linux-x86_64.deb
+</code></pre>
+<p>Use the RPM package on Fedora 43:</p>
+<pre><code class="language-sh">sha256sum --check via-VERSION-linux-x86_64.rpm.sha256
+sudo dnf install ./via-VERSION-linux-x86_64.rpm
+</code></pre>
+<p>On a Debian or Fedora system running systemd, the first installation enables
+and starts <code>via.service</code>. Its default configuration listens on <code>:80</code> in debug
+mode and serves a local welcome page. If the service cannot start, inspect it
+with <code>systemctl status via</code>. Before using the service in production, edit
+<code>/etc/via/example-config.yaml</code> and remove <code>debug: true</code>.</p>
+<p>On Ubuntu 24.04, verify and install the binary archive:</p>
+<pre><code class="language-sh">sha256sum --check via-VERSION-linux-x86_64-bin.tar.xz.sha256
+tar -xJf via-VERSION-linux-x86_64-bin.tar.xz
+sudo install -m 0755 \
+  via-VERSION-linux-x86_64-bin/via \
+  /usr/local/bin/via
+</code></pre>
+<p>Replace <code>x86_64</code> with <code>aarch64</code> on an ARM64 system. Release binaries include
+TLS support.</p>
+<h3 id="installer-fallback">Installer fallback</h3>
+<p>As a last resort when manual installation is not suitable, run:</p>
+<pre><code class="language-sh">curl -fsSL https://via.makridenko.com/install.sh | sh
+</code></pre>
+<p>The installer supports x86-64 and ARM64 versions of Debian 13, Fedora 43, and
+Ubuntu 24.04. It detects the system, downloads the latest matching release,
+verifies its SHA-256 checksum, and performs the same installation described
+above.</p>
+<h2 id="create-a-configuration">Create a configuration</h2>
+<p>Save the following as <code>via.yaml</code>:</p>
+<pre><code class="language-yaml">listen: &quot;:8080&quot;
+proxy_pass: http://localhost:3000
+</code></pre>
+<h2 id="run-via">Run Via</h2>
+<pre><code class="language-sh">via check -c via.yaml
+via run -c via.yaml
+</code></pre>
+<p>Requests to <code>http://localhost:8080</code> are now proxied to
+<code>http://localhost:3000</code>.</p>
+<p>Confirm it from another shell:</p>
+<pre><code class="language-sh">curl http://localhost:8080/
+</code></pre>
+<p>The CLI also exposes:</p>
+<pre><code class="language-sh">via check -c via.yaml
+via run --debug -c via.yaml
+via --help
+via --version
+</code></pre>
+<h2 id="next-steps">Next steps</h2>
+<ul>
+<li><a href="../configuration/#routes">Add host and path routes</a></li>
+<li><a href="../configuration/#path-matching">Strip a route prefix</a></li>
+<li><a href="../proxying/#websockets">Proxy a WebSocket</a></li>
+<li><a href="../tls/">Enable TLS</a></li>
+<li><a href="../service/">Run under systemd</a></li>
+<li><a href="../logging/#trace-a-failed-request">Trace a failed request</a></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Overview"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../configuration/" class="btn btn-neutral float-right" title="Routes and configuration">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../configuration/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

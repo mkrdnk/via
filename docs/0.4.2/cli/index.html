@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://via.makridenko.com/docs/0.4.2/cli/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>CLI reference - Via</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" />
+        <link href="../assets/site.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "CLI reference";
+        var mkdocs_page_input_path = "cli.md";
+        var mkdocs_page_url = "/docs/0.4.2/cli/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+  <a href=".." class="docs-brand" aria-label="via documentation">
+    <img src="../assets/favicon.svg" alt="" width="60" height="32" />
+    <span>via</span>
+  </a>
+<div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Overview</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Install and run</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Configure</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../configuration/">Routes and configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../proxying/">Proxying and WebSockets</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tls/">TLS</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../static-files/">Static files</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Deploy</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../service/">Run as a service</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../container/">Run in a container</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Operate</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../hot-reload/">Reload configuration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../logging/">Logs and troubleshooting</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">CLI reference</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#commands">Commands</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#validate-configuration">Validate configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#debug-mode">Debug mode</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#exit-behavior">Exit behavior</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Via</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Operate</li>
+      <li class="breadcrumb-item active">CLI reference</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mkrdnk/via/edit/master/docs/cli.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="cli">CLI</h1>
+<p>Via uses the <code>run</code> command to start the proxy. Without <code>-c</code>, it loads YAML
+configuration from <code>/etc/via/</code>:</p>
+<pre><code class="language-sh">via run
+</code></pre>
+<p>Override that default with one YAML file:</p>
+<pre><code class="language-sh">via run -c config.yaml
+</code></pre>
+<p>Or with a directory of configuration fragments:</p>
+<pre><code class="language-sh">via run -c /etc/via/config/
+</code></pre>
+<p>Via prints one startup summary after all configured listeners are bound:</p>
+<pre><code class="language-text">→ config     /etc/via/config/
+→ listening  :80
+→ listening  :443 (TLS)
+→ upstream   localhost:3000
+
+ready
+</code></pre>
+<p>The summary includes one <code>listening</code> row per listener. Multiple-route
+configurations show the route count and each unique proxy or static target.
+TLS and debug mode are marked explicitly.</p>
+<p>The banner is written to stdout. Operational records are written to stderr by
+default or to the configured <code>log_file</code>; see
+<a href="../logging/">Logs and troubleshooting</a>.</p>
+<h2 id="commands">Commands</h2>
+<pre><code class="language-text">via run [options]    Start the proxy
+via check [options]  Validate configuration without starting the proxy
+</code></pre>
+<p>Both commands accept:</p>
+<pre><code class="language-text">-c PATH, --config=PATH  Configuration file or directory (default: /etc/via/)
+--version               Print the Via version
+-h, --help              Print command help
+</code></pre>
+<p><code>via run</code> additionally accepts:</p>
+<pre><code class="language-text">--debug            Show diagnostics and verbose proxy logs
+--log-level=LEVEL  Override the configured log level
+</code></pre>
+<p><code>--log-level</code> accepts <code>DEBUG</code>, <code>INFO</code>, <code>WARN</code>, or <code>ERROR</code> case-insensitively;
+<code>WARNING</code> is an alias for <code>WARN</code>.</p>
+<h2 id="validate-configuration">Validate configuration</h2>
+<p>Check the default <code>/etc/via/</code> configuration:</p>
+<pre><code class="language-sh">via check
+</code></pre>
+<p>Or check a specific file or directory:</p>
+<pre><code class="language-sh">via check -c config.yaml
+</code></pre>
+<p>A valid configuration exits with status <code>0</code> and is not bound to any listening
+address. Invalid YAML, routes, listeners, static targets, or TLS files produce a
+configuration error and a non-zero exit status.</p>
+<h2 id="debug-mode">Debug mode</h2>
+<pre><code class="language-sh">via run --debug -c config.yaml
+</code></pre>
+<p>Debug mode shows configuration diagnostics in the browser and adds request,
+routing, and upstream details to logs. It overrides the configured <code>log_level</code>
+with <code>DEBUG</code> unless <code>--log-level</code> provides an explicit CLI override. See
+<a href="../hot-reload/">Reload configuration</a>.</p>
+<p><code>--debug</code> applies to every listener. To debug only one listener, set
+<code>debug: true</code> in that listener's YAML configuration instead.</p>
+<h2 id="exit-behavior">Exit behavior</h2>
+<p>Configuration and listener errors produce a non-zero exit status. <code>SIGINT</code> and
+<code>SIGTERM</code> stop all listeners gracefully: Via stops accepting connections,
+finishes active HTTP requests, drains WebSockets for their configured grace
+period, and then closes upstream pools.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../logging/" class="btn btn-neutral float-left" title="Logs and troubleshooting"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mkrdnk/via" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../logging/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
