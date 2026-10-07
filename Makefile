@@ -21,7 +21,7 @@ $(NFPM):
 		sh scripts/install-nfpm.sh
 endif
 
-.PHONY: all doctor check-openssl build build-http release release-http package-bin package-deb package-rpm run debug test test-http format format-check docs docs-serve pages-smoke check check-http benchmark clean
+.PHONY: all doctor check-openssl build build-http release release-http package-bin package-deb package-rpm run debug test test-http test-certbot format format-check docs docs-serve pages-smoke check check-http benchmark clean
 
 all: build
 
@@ -112,6 +112,11 @@ test: check-openssl
 
 test-http:
 	$(CRYSTAL) spec -D without_openssl
+
+test-certbot: check-openssl
+	@command -v openssl >/dev/null 2>&1 || { echo 'Certbot integration tests require the openssl CLI.' >&2; exit 1; }
+	sh scripts/test-certbot-deploy.sh
+	$(CRYSTAL) spec spec/certbot_spec.cr
 
 format:
 	$(CRYSTAL) tool format
