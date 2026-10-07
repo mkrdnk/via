@@ -76,7 +76,7 @@ headers, redirects, static routes, TLS, and multiple listeners.
 | Install Via and proxy the first request | [Install and run](web/docs/getting-started.md) |
 | Configure routes, prefix stripping, headers, or redirects | [Configuration](web/docs/configuration.md) |
 | Understand forwarding, streaming, and WebSockets | [Proxying and WebSockets](web/docs/proxying.md) |
-| Terminate HTTPS | [TLS](web/docs/tls.md) |
+| Terminate HTTPS and automate Let's Encrypt certificates | [TLS and Certbot](web/docs/tls.md) |
 | Serve a site or SPA | [Static files](web/docs/static-files.md) |
 | Run under systemd | [Run as a service](web/docs/service.md) |
 | Run an unprivileged container | [Run in a container](web/docs/container.md) |
@@ -87,8 +87,15 @@ headers, redirects, static routes, TLS, and multiple listeners.
 ## Scope
 
 Via intentionally does not provide caching, FastCGI, WAF functionality,
-scripting, plugins, arbitrary rewrite rules, ACME automation, or load
+scripting, plugins, arbitrary rewrite rules, a built-in ACME client, or load
 balancing. See the feature-specific guides for current limitations.
+
+## Certbot integration checks
+
+Run `make test-certbot` to test the deploy hook and the HTTP-01 and TLS reload
+workflows locally. This requires the OpenSSL CLI in addition to the normal
+Crystal/TLS build dependencies. Tests do not contact Let's Encrypt or require
+root, Certbot, or a running systemd service.
 
 ## License
 

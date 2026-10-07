@@ -70,47 +70,22 @@ described in [Reload configuration](hot-reload.md).
 
 ## Certbot certificate permissions
 
-Certbot normally protects `/etc/letsencrypt/live/` from service accounts. Copy
-the certificate and key into a directory readable only by `root` and the `via`
-group instead of granting Via process-wide access to root-owned files:
-
-```sh
-domain=example.com
-install -d -o root -g via -m 0750 "/etc/via/tls/$domain"
-install -o root -g via -m 0640 \
-  "/etc/letsencrypt/live/$domain/fullchain.pem" \
-  "/etc/via/tls/$domain/fullchain.pem"
-install -o root -g via -m 0640 \
-  "/etc/letsencrypt/live/$domain/privkey.pem" \
-  "/etc/via/tls/$domain/privkey.pem"
-```
-
-Point the listener at the copies:
+Certbot normally protects `/etc/letsencrypt/live/` from service accounts.
+The packaged `/usr/libexec/via/certbot-deploy` helper publishes a validated
+certificate and key as one PEM bundle, readable only by `root` and the `via`
+group. It does not relax permissions on Certbot's account or private keys.
+Configure both TLS paths to use that bundle:
 
 ```yaml
 tls:
-  cert: /etc/via/tls/example.com/fullchain.pem
-  key: /etc/via/tls/example.com/privkey.pem
+  cert: /etc/via/tls/example.com/tls.pem
+  key: /etc/via/tls/example.com/tls.pem
 ```
 
-Automate later renewals with a Certbot deploy hook. Certbot provides
-`RENEWED_LINEAGE`, whose basename is the certificate name:
-
-```sh
-#!/bin/sh
-set -eu
-
-name=${RENEWED_LINEAGE##*/}
-target=/etc/via/tls/$name
-
-install -d -o root -g via -m 0750 "$target"
-install -o root -g via -m 0640 "$RENEWED_LINEAGE/fullchain.pem" "$target/fullchain.pem"
-install -o root -g via -m 0640 "$RENEWED_LINEAGE/privkey.pem" "$target/privkey.pem"
-```
-
-Install the script as an executable file under
-`/etc/letsencrypt/renewal-hooks/deploy/`. Via watches the configured certificate
-and key files and loads the new pair after the hook replaces them.
+Follow [Let's Encrypt with Certbot](tls.md#lets-encrypt-with-certbot) for the
+HTTP challenge route, first issuance, deploy-hook registration, and renewal
+scheduler. Installing Via alone does not request certificates or enable
+Certbot. Via automatically watches the deployed PEM; no restart hook is needed.
 
 See [Logs and troubleshooting](logging.md) for request tracing and additional
 `journalctl` commands.
